@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { competitions } from "@/data/mock";
+import { buildDlUrl, kindFromTrackType } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 const steps = ["اطلاعات اثر", "فایل و کاور", "عوامل و حقوق", "جزئیات تکمیلی", "بازبینی"];
@@ -41,6 +42,20 @@ export default function UploadPage() {
   const update = (key: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const mediaKind = kindFromTrackType(form.type as "audio" | "video");
+  const uploadDate = useMemo(() => new Date(), []);
+
+  const predictedMediaUrl = useMemo(() => {
+    if (form.fileLink.trim()) return form.fileLink.trim();
+    if (!form.fileName) return "";
+    return buildDlUrl(mediaKind, form.fileName, uploadDate);
+  }, [form.fileLink, form.fileName, mediaKind, uploadDate]);
+
+  const predictedCoverUrl = useMemo(() => {
+    if (!form.coverName) return "";
+    return buildDlUrl("covers", form.coverName, uploadDate);
+  }, [form.coverName, uploadDate]);
+
   const simulateUpload = () => {
     setUploading(true);
     setProgress(0);
@@ -60,10 +75,14 @@ export default function UploadPage() {
   const vocalSourceLabel =
     vocalSources.find((v) => v.value === form.vocalSource)?.label ?? form.vocalSource;
 
+  const monthFolder = String(uploadDate.getMonth() + 1).padStart(2, "0");
+
   return (
     <div className="container-page max-w-3xl py-10">
       <h1 className="section-title">ارسال اثر</h1>
-      <p className="section-sub">فرم چندمرحله‌ای آجاکس با نوار پیشرفت — بدون رفرش صفحه</p>
+      <p className="section-sub">
+        فایل‌های صوت و ویدئو روی dl.aimelody.ir ذخیره و بر اساس ماه آپلود پوشه‌بندی می‌شوند.
+      </p>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-1">
         {steps.map((label, i) => (
@@ -144,6 +163,19 @@ export default function UploadPage() {
 
         {step === 1 && (
           <div className="space-y-4">
+            <div className="rounded-xl border border-line bg-bg-soft p-4 text-sm text-muted">
+              <p className="font-bold text-text">مسیر ذخیره‌سازی ماهانه</p>
+              <p className="mt-1" dir="ltr">
+                https://dl.aimelody.ir/{mediaKind}/{uploadDate.getFullYear()}/{monthFolder}/
+              </p>
+              <p className="mt-2 text-xs">
+                کاور:{" "}
+                <span dir="ltr">
+                  covers/{uploadDate.getFullYear()}/{monthFolder}/
+                </span>
+              </p>
+            </div>
+
             <Field label="آپلود فایل اصلی *">
               <input
                 type="file"
@@ -151,16 +183,24 @@ export default function UploadPage() {
                 className="field"
                 onChange={(e) => update("fileName", e.target.files?.[0]?.name ?? "")}
               />
-              {form.fileName && <p className="mt-2 text-xs text-muted">{form.fileName}</p>}
+              {predictedMediaUrl && (
+                <p className="mt-2 break-all text-xs text-accent" dir="ltr">
+                  {predictedMediaUrl}
+                </p>
+              )}
             </Field>
-            <Field label="یا لینک مستقیم فایل">
+
+            <Field label="یا لینک مستقیم روی dl.aimelody.ir">
               <input
                 value={form.fileLink}
                 onChange={(e) => update("fileLink", e.target.value)}
                 className="field"
-                placeholder="https://..."
+                dir="ltr"
+                placeholder="https://dl.aimelody.ir/audio/2026/07/example.mp3"
               />
+              <p className="mt-1 text-xs text-muted">فقط لینک از دامنه dl.aimelody.ir</p>
             </Field>
+
             <Field
               label={
                 form.type === "audio"
@@ -174,12 +214,17 @@ export default function UploadPage() {
                 className="field"
                 onChange={(e) => update("coverName", e.target.files?.[0]?.name ?? "")}
               />
-              {form.coverName && <p className="mt-2 text-xs text-muted">{form.coverName}</p>}
+              {predictedCoverUrl && (
+                <p className="mt-2 break-all text-xs text-accent" dir="ltr">
+                  {predictedCoverUrl}
+                </p>
+              )}
             </Field>
+
             {(uploading || progress > 0) && (
               <div>
                 <div className="mb-2 flex justify-between text-sm">
-                  <span>پیشرفت آپلود</span>
+                  <span>پیشرفت آپلود به dl.aimelody.ir (Signed URL دمو)</span>
                   <span>{progress}٪</span>
                 </div>
                 <div className="progress-bar">
@@ -205,7 +250,7 @@ export default function UploadPage() {
                 value={form.composer}
                 onChange={(e) => update("composer", e.target.value)}
                 className="field"
-                placeholder="نام آهنگساز (اگر با سازنده یکی است خالی بگذارید)"
+                placeholder="نام آهنگساز"
               />
             </Field>
             <Field label="مالک صدای خواننده *">
@@ -238,7 +283,7 @@ export default function UploadPage() {
               />
               <span className="text-muted">
                 تأیید می‌کنم که حقوق شعر، ملودی، صدا و تصویر این اثر متعلق به من است یا مجوز
-                استفاده دارم و مسئولیت هرگونه نقض حقوق با من است.
+                استفاده دارم.
               </span>
             </label>
           </div>
@@ -299,18 +344,16 @@ export default function UploadPage() {
             <Row label="عنوان" value={form.title || "—"} />
             <Row label="نوع" value={form.type === "audio" ? "صوتی" : "ویدئویی"} />
             <Row label="ژانر" value={form.genre} />
-            <Row label="زبان" value={form.language} />
-            <Row label="فایل" value={form.fileName || form.fileLink || "—"} />
-            <Row label="کاور" value={form.coverName || "—"} />
+            <Row label="آدرس فایل" value={predictedMediaUrl || "—"} ltr />
+            <Row label="آدرس کاور" value={predictedCoverUrl || "—"} ltr />
             <Row label="شاعر" value={form.lyricist || "—"} />
             <Row label="آهنگساز" value={form.composer || "—"} />
             <Row label="مالک صدا" value={form.vocalOwner || "—"} />
             <Row label="منبع صدا" value={vocalSourceLabel} />
-            <Row label="ابزارها" value={form.aiTools || "—"} />
             <Row label="تأیید حقوق" value={form.rightsConfirm ? "بله" : "خیر"} />
             {done ? (
               <p className="rounded-xl bg-success/15 p-4 text-success">
-                اثر با موفقیت در صف بررسی مدیر قرار گرفت. (شبیه‌سازی دمو)
+                اثر در صف بررسی است و فایل به مسیر ماهانه روی dl.aimelody.ir ارسال شد. (دمو)
               </p>
             ) : (
               <button
@@ -321,7 +364,8 @@ export default function UploadPage() {
                   !form.title ||
                   !form.lyricist ||
                   !form.vocalOwner ||
-                  !form.rightsConfirm
+                  !form.rightsConfirm ||
+                  (!form.fileName && !form.fileLink)
                 }
                 onClick={simulateUpload}
               >
@@ -364,11 +408,21 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({
+  label,
+  value,
+  ltr,
+}: {
+  label: string;
+  value: string;
+  ltr?: boolean;
+}) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line py-2">
-      <span className="text-muted">{label}</span>
-      <span className="text-left font-medium">{value}</span>
+      <span className="shrink-0 text-muted">{label}</span>
+      <span className="break-all text-left font-medium" dir={ltr ? "ltr" : undefined}>
+        {value}
+      </span>
     </div>
   );
 }

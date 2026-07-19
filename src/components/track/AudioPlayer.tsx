@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import type { Track } from "@/types";
+import { getApprovedTracks } from "@/data/mock";
+import { usePlayer } from "@/components/player/PlayerProvider";
 
 function Waveform({ active }: { active: boolean }) {
   const bars = useMemo(() => Array.from({ length: 28 }, (_, i) => 20 + ((i * 17) % 70)), []);
@@ -24,20 +27,13 @@ function Waveform({ active }: { active: boolean }) {
 }
 
 export function AudioPlayer({ track }: { track: Track }) {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const { current, playing, progress, playTrack, toggle, next, prev, seek } = usePlayer();
+  const active = current?.id === track.id;
+  const isPlaying = active && playing;
 
-  const toggle = async () => {
-    const el = audioRef.current;
-    if (!el) return;
-    if (playing) {
-      el.pause();
-      setPlaying(false);
-    } else {
-      await el.play();
-      setPlaying(true);
-    }
+  const start = () => {
+    if (active) toggle();
+    else playTrack(track, getApprovedTracks());
   };
 
   return (
@@ -52,39 +48,38 @@ export function AudioPlayer({ track }: { track: Track }) {
         <div className="flex flex-col justify-between gap-4">
           <div>
             <p className="badge mb-3">فایل صوتی</p>
-            <h1 className="font-display text-3xl font-bold md:text-4xl">{track.title}</h1>
-            <p className="mt-2 text-muted">{track.artist.name} · {track.genre}</p>
+            <h1 className="text-3xl font-bold md:text-4xl">{track.title}</h1>
+            <p className="mt-2 text-muted">
+              <Link href={`/artist/${track.artist.id}`} className="hover:text-accent">
+                {track.artist.name}
+              </Link>{" "}
+              · {track.genre}
+            </p>
           </div>
-          <Waveform active={playing} />
+          <Waveform active={isPlaying} />
           <div>
             <input
               type="range"
               min={0}
               max={100}
-              value={progress}
-              onChange={(e) => {
-                const el = audioRef.current;
-                const value = Number(e.target.value);
-                setProgress(value);
-                if (el && el.duration) {
-                  el.currentTime = (value / 100) * el.duration;
-                }
-              }}
+              value={active ? progress : 0}
+              onChange={(e) => seek(Number(e.target.value))}
+              disabled={!active}
             />
             <div className="mt-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                <button type="button" className="btn btn-ghost !px-3" aria-label="قبلی">
+                <button type="button" className="btn btn-ghost !px-3" onClick={prev} aria-label="قبلی">
                   <SkipBack size={16} />
                 </button>
                 <button
                   type="button"
-                  onClick={toggle}
+                  onClick={start}
                   className="btn btn-primary !px-5"
-                  aria-label={playing ? "توقف" : "پخش"}
+                  aria-label={isPlaying ? "توقف" : "پخش"}
                 >
-                  {playing ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
+                  {isPlaying ? <Pause size={18} /> : <Play size={18} fill="currentColor" />}
                 </button>
-                <button type="button" className="btn btn-ghost !px-3" aria-label="بعدی">
+                <button type="button" className="btn btn-ghost !px-3" onClick={next} aria-label="بعدی">
                   <SkipForward size={16} />
                 </button>
               </div>
@@ -96,16 +91,6 @@ export function AudioPlayer({ track }: { track: Track }) {
           </div>
         </div>
       </div>
-      <audio
-        ref={audioRef}
-        src={track.mediaUrl}
-        preload="none"
-        onTimeUpdate={(e) => {
-          const el = e.currentTarget;
-          if (el.duration) setProgress((el.currentTime / el.duration) * 100);
-        }}
-        onEnded={() => setPlaying(false)}
-      />
     </div>
   );
 }

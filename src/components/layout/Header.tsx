@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Search, Upload, X } from "lucide-react";
+import { Menu, Upload, X } from "lucide-react";
 import { useState } from "react";
+import { LiveSearch } from "@/components/search/LiveSearch";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { currentUser } from "@/data/mock";
 import { cn } from "@/lib/utils";
 
@@ -20,8 +22,8 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] backdrop-blur-xl">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
-        <Link href="/" className="font-display text-xl font-bold tracking-tight">
+      <div className="container-page flex h-16 items-center justify-between gap-3">
+        <Link href="/" className="shrink-0 font-display text-xl font-bold tracking-tight">
           Ai<span className="text-accent">Melody</span>
           <span className="text-muted text-sm font-normal">.ir</span>
         </Link>
@@ -43,15 +45,10 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/explore"
-            className="btn btn-ghost hidden !px-3 sm:inline-flex"
-            aria-label="جستجو"
-          >
-            <Search size={16} />
-          </Link>
-          <Link href="/upload" className="btn btn-primary !py-2 text-sm">
+        <div className="flex min-w-0 items-center gap-2">
+          <LiveSearch />
+          <ThemeToggle />
+          <Link href="/upload" className="btn btn-primary !px-3 !py-2 text-sm">
             <Upload size={15} />
             <span className="hidden sm:inline">ارسال اثر</span>
           </Link>
@@ -80,42 +77,45 @@ export function Header() {
 
       {open && (
         <div className="border-t border-line lg:hidden">
-          <nav className="container-page flex flex-col gap-1 py-3">
-            {links.map((link) => (
+          <div className="container-page space-y-3 py-3">
+            <LiveSearch compact />
+            <nav className="flex flex-col gap-1">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "rounded-xl px-3 py-2.5",
+                    pathname === link.href ? "bg-accent-soft text-accent" : "text-muted",
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
               <Link
-                key={link.href}
-                href={link.href}
+                href="/dashboard"
                 onClick={() => setOpen(false)}
-                className={cn(
-                  "rounded-xl px-3 py-2.5",
-                  pathname === link.href ? "bg-accent-soft text-accent" : "text-muted",
-                )}
+                className="rounded-xl px-3 py-2.5 text-muted"
               >
-                {link.label}
+                داشبورد من
               </Link>
-            ))}
-            <Link
-              href="/dashboard"
-              onClick={() => setOpen(false)}
-              className="rounded-xl px-3 py-2.5 text-muted"
-            >
-              داشبورد من
-            </Link>
-            <Link
-              href="/admin"
-              onClick={() => setOpen(false)}
-              className="rounded-xl px-3 py-2.5 text-muted"
-            >
-              پنل مدیریت
-            </Link>
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="rounded-xl px-3 py-2.5 text-muted"
-            >
-              ورود / ثبت‌نام
-            </Link>
-          </nav>
+              <Link
+                href="/admin"
+                onClick={() => setOpen(false)}
+                className="rounded-xl px-3 py-2.5 text-muted"
+              >
+                پنل مدیریت
+              </Link>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="rounded-xl px-3 py-2.5 text-muted"
+              >
+                ورود / ثبت‌نام
+              </Link>
+            </nav>
+          </div>
         </div>
       )}
     </header>

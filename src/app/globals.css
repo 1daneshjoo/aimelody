@@ -1,6 +1,40 @@
 @import "tailwindcss";
 
+/* پیش‌فرض: تم روشن */
 :root {
+  --bg: #f6f1e8;
+  --bg-soft: #efe8dc;
+  --bg-elevated: #fffcf7;
+  --bg-hover: #e7dfd2;
+  --line: rgba(40, 28, 16, 0.12);
+  --text: #1c1610;
+  --muted: #6f6458;
+  --accent: #c9891f;
+  --accent-2: #b14e1e;
+  --accent-soft: rgba(201, 137, 31, 0.14);
+  --success: #2f7d57;
+  --danger: #b53f32;
+  --radius: 14px;
+  --font-body: var(--font-vazirmatn), "Vazirmatn", sans-serif;
+  --progress-track: rgba(28, 22, 16, 0.1);
+  --hero-scrim: linear-gradient(
+    to top,
+    rgba(246, 241, 232, 0.96) 0%,
+    rgba(28, 22, 16, 0.45) 45%,
+    rgba(28, 22, 16, 0.25) 100%
+  );
+  --body-glow: radial-gradient(
+      ellipse 80% 50% at 100% -10%,
+      rgba(196, 92, 38, 0.14),
+      transparent 55%
+    ),
+    radial-gradient(ellipse 60% 40% at 0% 20%, rgba(227, 162, 58, 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(61, 155, 110, 0.05), transparent 60%),
+    linear-gradient(180deg, #f8f3eb 0%, #f6f1e8 45%, #f1ebe1 100%);
+}
+
+/* تم تاریک — همان رنگ‌بندی فعلی */
+html[data-theme="dark"] {
   --bg: #0e0c0a;
   --bg-soft: #161310;
   --bg-elevated: #1c1814;
@@ -13,8 +47,21 @@
   --accent-soft: rgba(227, 162, 58, 0.16);
   --success: #3d9b6e;
   --danger: #c44b3c;
-  --radius: 14px;
-  --font-body: var(--font-vazirmatn), "Vazirmatn", sans-serif;
+  --progress-track: rgba(255, 255, 255, 0.08);
+  --hero-scrim: linear-gradient(
+    to top,
+    rgba(14, 12, 10, 1) 0%,
+    rgba(14, 12, 10, 0.72) 45%,
+    rgba(14, 12, 10, 0.35) 100%
+  );
+  --body-glow: radial-gradient(
+      ellipse 80% 50% at 100% -10%,
+      rgba(196, 92, 38, 0.22),
+      transparent 55%
+    ),
+    radial-gradient(ellipse 60% 40% at 0% 20%, rgba(227, 162, 58, 0.12), transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(61, 155, 110, 0.06), transparent 60%),
+    linear-gradient(180deg, #120f0c 0%, #0e0c0a 40%, #0b0a08 100%);
 }
 
 @theme inline {
@@ -39,6 +86,11 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
 }
 
 body {
@@ -48,6 +100,7 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   line-height: 1.7;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 body::before {
@@ -56,11 +109,7 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: -1;
-  background:
-    radial-gradient(ellipse 80% 50% at 100% -10%, rgba(196, 92, 38, 0.22), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 0% 20%, rgba(227, 162, 58, 0.12), transparent 50%),
-    radial-gradient(ellipse 50% 30% at 50% 100%, rgba(61, 155, 110, 0.06), transparent 60%),
-    linear-gradient(180deg, #120f0c 0%, #0e0c0a 40%, #0b0a08 100%);
+  background: var(--body-glow);
 }
 
 a {
@@ -95,7 +144,7 @@ textarea {
 }
 
 .surface {
-  background: color-mix(in oklab, var(--bg-elevated) 88%, transparent);
+  background: color-mix(in oklab, var(--bg-elevated) 92%, transparent);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   backdrop-filter: blur(10px);
@@ -143,7 +192,7 @@ textarea {
   font-size: 0.75rem;
   background: var(--accent-soft);
   color: var(--accent);
-  border: 1px solid rgba(227, 162, 58, 0.25);
+  border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
 }
 
 .section-title {
@@ -217,13 +266,40 @@ textarea {
   animation: pulseGlow 4.5s ease-in-out infinite;
 }
 
+.hero-scrim {
+  background: var(--hero-scrim);
+}
+
 .track-cover {
   transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
-.group:hover .track-cover {
+/* کادر ثابت مربع برای همه کاورهای اسلایدر / اکسپلور */
+.track-thumb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: var(--bg-elevated);
+  isolation: isolate;
+}
+
+.track-thumb > img.track-cover,
+.track-thumb > img {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.group:hover .track-thumb > img.track-cover {
   transform: scale(1.04);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
 }
 
 .star-btn {
@@ -240,7 +316,7 @@ textarea {
 .progress-bar {
   height: 8px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--progress-track);
   overflow: hidden;
 }
 
@@ -267,22 +343,19 @@ input[type="range"] {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: color-mix(in oklab, var(--text) 20%, transparent);
   border-radius: 99px;
 }
 
-.field {
-  width: 100%;
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  background: var(--bg-soft);
-  padding: 0.7rem 0.85rem;
-  color: var(--text);
-  outline: none;
+.rail-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.field:focus {
-  border-color: var(--accent);
+.rail-track::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .field {
@@ -297,4 +370,24 @@ input[type="range"] {
 
 .field:focus {
   border-color: var(--accent);
+}
+
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--bg-soft) 100%, transparent) 0%,
+    color-mix(in oklab, var(--bg-hover) 100%, transparent) 50%,
+    color-mix(in oklab, var(--bg-soft) 100%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }

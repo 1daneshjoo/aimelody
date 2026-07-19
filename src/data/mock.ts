@@ -11,42 +11,42 @@ const artists = {
   nika: {
     id: "a1",
     name: "نیکا رضایی",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&h=200&fit=crop",
+    avatar: "/images/avatars/a1.jpg",
     bio: "آهنگساز هوش مصنوعی و تهیه‌کننده پاپ",
   },
   arman: {
     id: "a2",
     name: "آرمان کاویانی",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop",
+    avatar: "/images/avatars/a2.jpg",
     bio: "رپر و ترانه‌سرا با تمرکز روی وکال طبیعی",
   },
   sara: {
     id: "a3",
     name: "سارا مهرگان",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop",
+    avatar: "/images/avatars/a3.jpg",
     bio: "سازنده موزیک‌ویدئو با ابزارهای جنریتیو",
   },
   pouya: {
     id: "a4",
     name: "پویا شریفی",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop",
+    avatar: "/images/avatars/a4.jpg",
     bio: "فیوژن سنتی و الکترونیک",
   },
   elahe: {
     id: "a5",
     name: "الهه نادری",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop",
+    avatar: "/images/avatars/a5.jpg",
     bio: "آهنگساز امبینت و فضاسازی صوتی",
   },
 };
 
 const lyricistAvatars: Record<string, string> = {
-  "مهسا کریمی": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=200&h=200&fit=crop",
+  "مهسا کریمی": "/images/avatars/a7.jpg",
   "آرمان کاویانی": artists.arman.avatar,
-  "کیان رستمی": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop",
+  "کیان رستمی": "/images/avatars/a8.jpg",
   "پویا شریفی": artists.pouya.avatar,
   "نیکا رضایی": artists.nika.avatar,
-  "نوید محمدی": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+  "نوید محمدی": "/images/avatars/a6.jpg",
 };
 
 export const currentUser: UserProfile = {
@@ -54,7 +54,7 @@ export const currentUser: UserProfile = {
   name: "نوید محمدی",
   phone: "0912***7843",
   role: "user",
-  avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop",
+  avatar: "/images/avatars/a6.jpg",
   bio: "علاقه‌مند به موسیقی تولیدی با هوش مصنوعی",
   joinedAt: "۱۴۰۴/۰۸/۱۲",
 };
@@ -64,8 +64,8 @@ export const tracks: Track[] = [
     id: "t1",
     title: "شب‌های تهران",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    cover: "/images/covers/t1.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-1.mp3",
     artist: artists.nika,
     lyricist: "مهسا کریمی",
     vocalOwner: "نیکا رضایی",
@@ -99,8 +99,8 @@ export const tracks: Track[] = [
     id: "t2",
     title: "کد و ریتم",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    cover: "/images/covers/t2.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-2.mp3",
     artist: artists.arman,
     lyricist: "آرمان کاویانی",
     vocalOwner: "آرمان کاویانی",
@@ -127,8 +127,8 @@ export const tracks: Track[] = [
     id: "t3",
     title: "پرواز در مه",
     type: "video",
-    cover: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=1280&h=720&fit=crop",
-    mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    cover: "/images/covers/t3.jpg",
+    mediaUrl: "https://dl.aimelody.ir/video/2026/07/parvaz-dar-meh.mp4",
     artist: artists.sara,
     lyricist: "کیان رستمی",
     vocalOwner: "سارا مهرگان",
@@ -159,8 +159,8 @@ export const tracks: Track[] = [
     id: "t4",
     title: "صدا از دل کویر",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1459749411175-04bf5296774d?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    cover: "/images/covers/t4.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-3.mp3",
     artist: artists.pouya,
     lyricist: "پویا شریفی",
     vocalOwner: "استودیو نوا",
@@ -187,8 +187,8 @@ export const tracks: Track[] = [
     id: "t5",
     title: "پالس نیمه‌شب",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    cover: "/images/covers/t5.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-4.mp3",
     artist: artists.elahe,
     lyricist: "کیان رستمی",
     vocalOwner: "الهه نادری",
@@ -211,8 +211,8 @@ export const tracks: Track[] = [
     id: "t6",
     title: "آینه شکسته",
     type: "video",
-    cover: "https://images.unsplash.com/photo-1514320291840-b9a56d0bb0bc?w=1280&h=720&fit=crop",
-    mediaUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    cover: "/images/covers/t6.jpg",
+    mediaUrl: "https://dl.aimelody.ir/video/2026/07/ayene-shekaste.mp4",
     artist: artists.sara,
     lyricist: "مهسا کریمی",
     vocalOwner: "سارا مهرگان",
@@ -247,8 +247,8 @@ export const tracks: Track[] = [
     id: "t7",
     title: "خورشید مصنوعی",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    cover: "/images/covers/t7.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-5.mp3",
     artist: artists.nika,
     lyricist: "نیکا رضایی",
     vocalOwner: "نیکا رضایی",
@@ -271,8 +271,8 @@ export const tracks: Track[] = [
     id: "t8",
     title: "نامه‌ای بدون آدرس",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1487180144351-b8472da7d491?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    cover: "/images/covers/t8.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-6.mp3",
     artist: artists.arman,
     lyricist: "آرمان کاویانی",
     vocalOwner: "آرمان کاویانی",
@@ -299,8 +299,8 @@ export const tracks: Track[] = [
     id: "t9",
     title: "دموی آزمایشی من",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    cover: "/images/covers/t9.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-7.mp3",
     artist: {
       id: "u1",
       name: "نوید محمدی",
@@ -325,8 +325,8 @@ export const tracks: Track[] = [
     id: "t10",
     title: "ریتم رد شده",
     type: "audio",
-    cover: "https://images.unsplash.com/photo-1516280440614-6697288d5d38?w=800&h=800&fit=crop",
-    mediaUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    cover: "/images/covers/t10.jpg",
+    mediaUrl: "https://dl.aimelody.ir/audio/2026/07/track-8.mp3",
     artist: {
       id: "u1",
       name: "نوید محمدی",
@@ -355,7 +355,7 @@ export const competitions: Competition[] = [
     title: "بهترین آهنگ با شعر آزاد درباره شهر",
     description:
       "آثاری بسازید که حال‌وهوای زندگی شهری را با شعر آزاد روایت کنند. رأی‌گیری مردمی تا پایان مهلت فعال است.",
-    cover: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1200&h=600&fit=crop",
+    cover: "/images/covers/c1.jpg",
     deadline: "۱۴۰۵/۰۵/۱۵",
     status: "active",
     entriesCount: 86,
@@ -366,7 +366,7 @@ export const competitions: Competition[] = [
     title: "چالش موزیک‌ویدئو جنریتیو",
     description:
       "بهترین ترکیب صدا و تصویر ساخته‌شده با ابزارهای AI. کیفیت بصری وزن بیشتری در امتیاز دارد.",
-    cover: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&h=600&fit=crop",
+    cover: "/images/covers/c2.jpg",
     deadline: "۱۴۰۵/۰۵/۳۰",
     status: "active",
     entriesCount: 42,
@@ -376,7 +376,7 @@ export const competitions: Competition[] = [
     id: "c3",
     title: "فیوژن سنتی × الکترونیک",
     description: "مسابقه پایان‌یافته فصل قبل؛ برندگان اعلام شده‌اند.",
-    cover: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=1200&h=600&fit=crop",
+    cover: "/images/covers/c3.jpg",
     deadline: "۱۴۰۵/۰۲/۲۸",
     status: "ended",
     entriesCount: 120,
@@ -389,7 +389,7 @@ export const comments: Comment[] = [
     id: "cm1",
     trackId: "t1",
     userName: "مینا",
-    avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&h=100&fit=crop",
+    avatar: "/images/avatars/a9.jpg",
     body: "وکالش خیلی طبیعیه، حس کردم خواننده واقعی داره می‌خونه.",
     createdAt: "۲ روز پیش",
   },
@@ -397,7 +397,7 @@ export const comments: Comment[] = [
     id: "cm2",
     trackId: "t1",
     userName: "رضا",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+    avatar: "/images/avatars/a8.jpg",
     body: "شعرش ساده و قشنگه. ملودی هم تو ذهن می‌مونه.",
     createdAt: "۳ روز پیش",
   },
@@ -405,7 +405,7 @@ export const comments: Comment[] = [
     id: "cm3",
     trackId: "t3",
     userName: "آیدا",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop",
+    avatar: "/images/avatars/a11.jpg",
     body: "تصاویر ویدئو فوق‌العاده‌ست، مخصوصاً سکانس مه‌آلود.",
     createdAt: "۱ روز پیش",
   },
@@ -413,7 +413,7 @@ export const comments: Comment[] = [
     id: "cm4",
     trackId: "t2",
     userName: "کسری",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+    avatar: "/images/avatars/a10.jpg",
     body: "متن ترانه قوی‌ترین بخششه. فلو هم خوبه.",
     createdAt: "۵ روز پیش",
   },
@@ -423,14 +423,14 @@ export const ads: AdBanner[] = [
   {
     id: "ad1",
     title: "استودیو صوتی آروان — ۲۰٪ تخفیف سازندگان",
-    image: "https://images.unsplash.com/photo-1598653227233-6a063db5986d?w=600&h=200&fit=crop",
+    image: "/images/ads/ad1.jpg",
     href: "#",
     placement: "sidebar",
   },
   {
     id: "ad2",
     title: "دوره پرامپت‌نویسی موسیقی AI",
-    image: "https://images.unsplash.com/photo-1516280440614-6697288d5d38?w=800&h=200&fit=crop",
+    image: "/images/ads/ad2.jpg",
     href: "#",
     placement: "inline",
   },
@@ -452,6 +452,42 @@ export const favoriteIds = ["t1", "t3", "t4"];
 
 export function getTrackById(id: string) {
   return tracks.find((t) => t.id === id);
+}
+
+export function getArtistById(id: string) {
+  const fromTrack = getApprovedTracks().find((t) => t.artist.id === id)?.artist;
+  return fromTrack;
+}
+
+export function getTracksByArtist(artistId: string) {
+  return getApprovedTracks().filter((t) => t.artist.id === artistId);
+}
+
+export function getAllArtists() {
+  const map = new Map<string, (typeof tracks)[0]["artist"]>();
+  for (const t of getApprovedTracks()) {
+    if (!map.has(t.artist.id)) map.set(t.artist.id, t.artist);
+  }
+  return [...map.values()];
+}
+
+export function searchCatalog(query: string) {
+  const q = query.trim();
+  if (!q) {
+    return { tracks: [] as typeof tracks, artists: [] as ReturnType<typeof getAllArtists>, genres: [] as string[] };
+  }
+  const trackHits = getApprovedTracks().filter(
+    (t) =>
+      t.title.includes(q) ||
+      t.artist.name.includes(q) ||
+      t.genre.includes(q) ||
+      t.lyricist.includes(q),
+  );
+  const artists = getAllArtists().filter((a) => a.name.includes(q) || a.bio?.includes(q));
+  const genres = [...new Set(getApprovedTracks().map((t) => t.genre))].filter((g) =>
+    g.includes(q),
+  );
+  return { tracks: trackHits.slice(0, 8), artists: artists.slice(0, 5), genres: genres.slice(0, 5) };
 }
 
 export function getCommentsByTrack(trackId: string) {
@@ -613,3 +649,4 @@ export function vocalSourceLabel(source: Track["vocalSource"]) {
       return "سایر";
   }
 }
+

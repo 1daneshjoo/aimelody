@@ -3,24 +3,23 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Heart, Music2 } from "lucide-react";
-import {
-  currentUser,
-  favoriteIds,
-  getTrackById,
-  getUserTracks,
-} from "@/data/mock";
+import { useLibrary } from "@/components/library/LibraryProvider";
+import { currentUser, getTrackById, getUserTracks, getAllArtists } from "@/data/mock";
 import { statusLabel, cn } from "@/lib/utils";
 
 const tabs = [
   { id: "profile", label: "پروفایل" },
   { id: "works", label: "آثار من" },
   { id: "favorites", label: "علاقه‌مندی‌ها" },
+  { id: "following", label: "دنبال‌شده‌ها" },
 ] as const;
 
 export default function DashboardPage() {
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("works");
   const myTracks = getUserTracks(currentUser.id);
+  const { favoriteIds, followingIds, toggleFavorite } = useLibrary();
   const favorites = favoriteIds.map((id) => getTrackById(id)).filter(Boolean);
+  const following = getAllArtists().filter((a) => followingIds.includes(a.id));
 
   return (
     <div className="container-page py-10">
@@ -32,7 +31,7 @@ export default function DashboardPage() {
           className="size-20 rounded-full object-cover"
         />
         <div className="flex-1">
-          <h1 className="font-display text-2xl font-bold">{currentUser.name}</h1>
+          <h1 className="text-2xl font-bold">{currentUser.name}</h1>
           <p className="text-sm text-muted">
             {currentUser.phone} · عضویت از {currentUser.joinedAt}
           </p>
@@ -43,14 +42,14 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className={cn(
-              "rounded-full border px-4 py-2 text-sm",
+              "min-h-11 rounded-full border px-4 py-2 text-sm",
               tab === t.id
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line text-muted",
@@ -80,15 +79,14 @@ export default function DashboardPage() {
       {tab === "works" && (
         <div className="space-y-3">
           {myTracks.map((t) => (
-            <div
-              key={t.id}
-              className="surface flex flex-wrap items-center gap-4 p-4"
-            >
+            <div key={t.id} className="surface flex flex-wrap items-center gap-4 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={t.cover} alt="" className="size-16 rounded-xl object-cover" />
               <div className="min-w-0 flex-1">
                 <p className="font-bold">{t.title}</p>
-                <p className="text-sm text-muted">{t.genre} · {t.createdAt}</p>
+                <p className="text-sm text-muted">
+                  {t.genre} · {t.createdAt}
+                </p>
               </div>
               <span
                 className={cn(
@@ -112,24 +110,54 @@ export default function DashboardPage() {
 
       {tab === "favorites" && (
         <div className="space-y-3">
+          {favorites.length === 0 && (
+            <p className="text-sm text-muted">هنوز اثر علاقه‌مندی ندارید.</p>
+          )}
           {favorites.map(
             (t) =>
               t && (
-                <Link
-                  key={t.id}
-                  href={`/track/${t.id}`}
-                  className="surface flex items-center gap-4 p-4 transition hover:bg-bg-hover"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.cover} alt="" className="size-16 rounded-xl object-cover" />
-                  <div className="flex-1">
-                    <p className="font-bold">{t.title}</p>
-                    <p className="text-sm text-muted">{t.artist.name}</p>
-                  </div>
-                  <Heart size={16} className="text-accent" fill="currentColor" />
-                </Link>
+                <div key={t.id} className="surface flex items-center gap-4 p-4">
+                  <Link href={`/track/${t.id}`} className="flex min-w-0 flex-1 items-center gap-4">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={t.cover} alt="" className="size-16 rounded-xl object-cover" />
+                    <div className="min-w-0">
+                      <p className="font-bold">{t.title}</p>
+                      <p className="text-sm text-muted">{t.artist.name}</p>
+                    </div>
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn btn-ghost !px-3"
+                    onClick={() => toggleFavorite(t.id)}
+                    aria-label="حذف از علاقه‌مندی"
+                  >
+                    <Heart size={16} className="text-accent" fill="currentColor" />
+                  </button>
+                </div>
               ),
           )}
+        </div>
+      )}
+
+      {tab === "following" && (
+        <div className="space-y-3">
+          {following.length === 0 && (
+            <p className="text-sm text-muted">هنوز کسی را دنبال نکرده‌اید.</p>
+          )}
+          {following.map((a) => (
+            <Link
+              key={a.id}
+              href={`/artist/${a.id}`}
+              className="surface flex items-center gap-4 p-4 transition hover:bg-bg-hover"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a.avatar} alt="" className="size-14 rounded-full object-cover" />
+              <div>
+                <p className="font-bold">{a.name}</p>
+                <p className="text-sm text-muted">{a.bio}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       )}
     </div>

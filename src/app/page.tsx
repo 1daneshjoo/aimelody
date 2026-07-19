@@ -5,7 +5,6 @@ import {
   competitions,
   formatNumber,
   getApprovedTracks,
-  getMostProlificCreators,
   getPromotedTracks,
   getTopCreators,
   getTopLyricists,
@@ -20,7 +19,6 @@ export default function HomePage() {
   const topMelody = sortTracks(approved, "melody").slice(0, 10);
   const topCreators = getTopCreators().slice(0, 10);
   const topLyricists = getTopLyricists().slice(0, 10);
-  const mostProlific = getMostProlificCreators().slice(0, 10);
   const activeCompetitions = competitions.filter((c) => c.status === "active");
 
   return (
@@ -30,19 +28,20 @@ export default function HomePage() {
         <img
           src={featured.cover}
           alt=""
+          referrerPolicy="no-referrer"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-[rgba(14,12,10,0.72)] to-[rgba(14,12,10,0.35)]" />
+        <div className="absolute inset-0 hero-scrim" />
         <div className="hero-glow absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
 
         <div className="container-page relative flex min-h-[min(88vh,820px)] flex-col justify-end pb-16 pt-28">
-          <p className="fade-up text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl">
+          <p className="fade-up text-5xl font-bold tracking-tight text-white sm:text-6xl md:text-7xl drop-shadow-md">
             Ai<span className="text-accent">Melody</span>
           </p>
-          <h1 className="fade-up-delay mt-4 max-w-2xl text-2xl font-medium leading-relaxed text-white/95 md:text-3xl">
+          <h1 className="fade-up-delay mt-4 max-w-2xl text-2xl font-medium leading-relaxed text-white/95 md:text-3xl drop-shadow">
             جایی که آثار هوش مصنوعی شنیده، سنجیده و دیده می‌شوند.
           </h1>
-          <p className="fade-up-delay-2 mt-4 max-w-xl text-base text-white/70 md:text-lg">
+          <p className="fade-up-delay-2 mt-4 max-w-xl text-base text-white/80 md:text-lg">
             ویترین صوت و ویدئو، چارت‌های تخصصی و مسابقات فصلی — همه در یک خانه.
           </p>
           <div className="fade-up-delay-2 mt-8 flex flex-wrap gap-3">
@@ -85,11 +84,6 @@ export default function HomePage() {
         subtitle="نویسندگان با بالاترین میانگین امتیاز شعر"
         items={topLyricists}
       />
-      <CreatorRail
-        title="بیشترین موزیک ساخته‌شده"
-        subtitle="سازندگان فعال بر اساس تعداد آثار منتشرشده"
-        items={mostProlific}
-      />
 
       <section className="container-page pb-16 pt-4">
         <div className="mb-6 flex items-center gap-2">
@@ -107,12 +101,13 @@ export default function HomePage() {
               <img
                 src={c.cover}
                 alt={c.title}
+                referrerPolicy="no-referrer"
                 className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <span className="badge mb-2">فعال · {formatNumber(c.entriesCount)} اثر</span>
-                <h3 className="text-xl font-bold">{c.title}</h3>
+                <h3 className="text-xl font-bold text-white">{c.title}</h3>
                 <p className="mt-1 line-clamp-2 text-sm text-white/70">{c.description}</p>
               </div>
             </Link>

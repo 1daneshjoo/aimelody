@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="hsl(160,55%,22%)"/>
+      <stop offset="100%" stop-color="hsl(190,60%,38%)"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="400" fill="url(#g)"/>
+  <circle cx="200" cy="175" r="70" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="8"/>
+  <circle cx="200" cy="175" r="18" fill="rgba(255,220,150,0.85)"/>
+  <text x="200" y="310" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-family="Arial,sans-serif" font-size="22" font-weight="700">AiMelody</text>
+  <text x="200" y="340" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-family="Arial,sans-serif" font-size="14">Cover 5</text>
+</svg>

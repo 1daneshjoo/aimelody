@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
+import { MobileNav } from "@/components/layout/MobileNav";
+import { LibraryProvider } from "@/components/library/LibraryProvider";
+import { MiniPlayer } from "@/components/player/MiniPlayer";
+import { PlayerProvider } from "@/components/player/PlayerProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import "./globals.css";
 
 const vazirmatn = Vazirmatn({
@@ -19,17 +24,39 @@ export const metadata: Metadata = {
     "پلتفرم انتشار، امتیازدهی و مسابقه آثار صوتی و ویدئویی ساخته‌شده با هوش مصنوعی",
 };
 
+const themeInitScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('aimelody-theme');
+    document.documentElement.dataset.theme = (t === 'dark' || t === 'light') ? t : 'light';
+  } catch (e) {
+    document.documentElement.dataset.theme = 'light';
+  }
+})();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`}>
+    <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`} data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className={`${vazirmatn.className} flex min-h-full flex-col antialiased`}>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
+        <ThemeProvider>
+          <LibraryProvider>
+            <PlayerProvider>
+              <Header />
+              <main className="flex-1 pb-36 md:pb-28">{children}</main>
+              <Footer />
+              <MiniPlayer />
+              <MobileNav />
+            </PlayerProvider>
+          </LibraryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

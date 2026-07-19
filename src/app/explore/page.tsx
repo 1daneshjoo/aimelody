@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { TrackCard } from "@/components/track/TrackCard";
+import { TrackGridSkeleton } from "@/components/track/TrackCardSkeleton";
 import { ads, genres, getApprovedTracks, sortTracks } from "@/data/mock";
+import { coverThumbUrl } from "@/lib/media";
 import type { ChartPeriod, ChartSort, MediaType } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -22,12 +25,23 @@ const sorts: { id: ChartSort; label: string }[] = [
   { id: "popular", label: "پرطرفدارترین" },
 ];
 
-export default function ExplorePage() {
+function ExploreInner() {
+  const searchParams = useSearchParams();
   const [period, setPeriod] = useState<ChartPeriod>("week");
   const [sort, setSort] = useState<ChartSort>("overall");
   const [genre, setGenre] = useState<string>("همه");
   const [type, setType] = useState<"all" | MediaType>("all");
   const [q, setQ] = useState("");
+  const [booting, setBooting] = useState(true);
+
+  useEffect(() => {
+    const qParam = searchParams.get("q");
+    const genreParam = searchParams.get("genre");
+    if (qParam) setQ(qParam);
+    if (genreParam) setGenre(genreParam);
+    const t = setTimeout(() => setBooting(false), 350);
+    return () => clearTimeout(t);
+  }, [searchParams]);
 
   const list = useMemo(() => {
     let items = getApprovedTracks();
@@ -39,7 +53,6 @@ export default function ExplorePage() {
         (t) => t.title.includes(query) || t.artist.name.includes(query) || t.genre.includes(query),
       );
     }
-    // period is visual-only in demo (no date math on Persian strings)
     void period;
     return sortTracks(items, sort);
   }, [genre, type, q, sort, period]);
@@ -56,7 +69,7 @@ export default function ExplorePage() {
             type="button"
             onClick={() => setPeriod(p.id)}
             className={cn(
-              "rounded-full border px-3 py-1.5 text-sm transition",
+              "min-h-10 rounded-full border px-3 py-1.5 text-sm transition",
               period === p.id
                 ? "border-accent bg-accent-soft text-accent"
                 : "border-line text-muted hover:text-text",
@@ -103,7 +116,7 @@ export default function ExplorePage() {
                   type="button"
                   onClick={() => setGenre(g)}
                   className={cn(
-                    "rounded-full px-3 py-1 text-xs",
+                    "min-h-9 rounded-full px-3 py-1 text-xs",
                     genre === g ? "bg-accent text-[#1a1008]" : "bg-bg-soft text-muted",
                   )}
                 >
@@ -114,25 +127,36 @@ export default function ExplorePage() {
           </div>
 
           <p className="mb-4 text-sm text-muted">{list.length} اثر پیدا شد</p>
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {list.map((track, i) => (
-              <div key={track.id}>
-                <TrackCard track={track} />
-                {i === 2 && (
-                  <a
-                    href={ads[1].href}
-                    className="mt-6 block overflow-hidden rounded-xl border border-line"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ads[1].image} alt={ads[1].title} className="h-24 w-full object-cover" />
-                    <p className="bg-bg-elevated px-3 py-2 text-xs text-muted">
-                      تبلیغ · {ads[1].title}
-                    </p>
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
+          {booting ? (
+            <TrackGridSkeleton count={6} />
+          ) : (
+            <div className="grid grid-cols-2 items-start gap-4 sm:gap-6 xl:grid-cols-3">
+              {list.map((track, i) => (
+                <div key={track.id} className="min-w-0 w-full">
+                  <TrackCard track={track} queue={list} />
+                  {i === 2 && (
+                    <a
+                      href={ads[1].href}
+                      className="mt-6 block overflow-hidden rounded-xl border border-line"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverThumbUrl(ads[1].image, 800)}
+                        alt={ads[1].title}
+                        width={800}
+                        height={200}
+                        loading="lazy"
+                        className="h-24 w-full object-cover object-center"
+                      />
+                      <p className="bg-bg-elevated px-3 py-2 text-xs text-muted">
+                        تبلیغ · {ads[1].title}
+                      </p>
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <aside className="space-y-4">
@@ -144,12 +168,16 @@ export default function ExplorePage() {
               <p className="mt-1 text-sm font-bold">{ads[0].title}</p>
             </div>
           </div>
-          <div className="surface p-4 text-sm text-muted">
-            <p className="mb-2 font-bold text-text">راهنمای فیلتر</p>
-            فیلترهای زمانی در نسخه دمو نمایشی هستند؛ بعد از اتصال بک‌اند بر اساس تاریخ واقعی محاسبه می‌شوند.
-          </div>
         </aside>
       </div>
     </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={<div className="container-page py-10"><TrackGridSkeleton count={6} /></div>}>
+      <ExploreInner />
+    </Suspense>
   );
 }

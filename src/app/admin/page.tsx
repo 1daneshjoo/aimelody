@@ -165,13 +165,33 @@ export default function AdminPage() {
                 <td className="p-3">{currentUser.joinedAt}</td>
               </tr>
               <tr className="border-b border-line">
-                <td className="p-3">نیکا رضایی</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/avatars/a1.jpg"
+                      alt=""
+                      className="size-8 rounded-full object-cover"
+                    />
+                    نیکا رضایی
+                  </div>
+                </td>
                 <td className="p-3">0912***1122</td>
                 <td className="p-3">user</td>
                 <td className="p-3">۱۴۰۴/۱۱/۰۳</td>
               </tr>
               <tr>
-                <td className="p-3">سارا مهرگان</td>
+                <td className="p-3">
+                  <div className="flex items-center gap-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="/images/avatars/a3.jpg"
+                      alt=""
+                      className="size-8 rounded-full object-cover"
+                    />
+                    سارا مهرگان
+                  </div>
+                </td>
                 <td className="p-3">0935***4410</td>
                 <td className="p-3">user</td>
                 <td className="p-3">۱۴۰۴/۰۹/۲۱</td>
