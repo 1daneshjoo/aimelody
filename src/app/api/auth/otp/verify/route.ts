@@ -66,12 +66,21 @@ export async function POST(req: Request) {
     });
 
     const users = await query<
-      (RowDataPacket & { id: number; phone: string; role: "user" | "admin"; name: string | null })[]
-    >(`SELECT id, phone, role, name FROM users WHERE phone = :phone LIMIT 1`, { phone });
+      (RowDataPacket & {
+        id: number;
+        phone: string;
+        role: "user" | "admin";
+        name: string | null;
+        avatar_url: string | null;
+      })[]
+    >(`SELECT id, phone, role, name, avatar_url FROM users WHERE phone = :phone LIMIT 1`, {
+      phone,
+    });
 
     let userId = users[0]?.id;
     let userRole: "user" | "admin" = users[0]?.role ?? "user";
     let userName: string | null = users[0]?.name ?? null;
+    let avatarUrl: string | null = users[0]?.avatar_url ?? null;
 
     if (!userId) {
       const result = await execute(
@@ -81,6 +90,7 @@ export async function POST(req: Request) {
       userId = Number(result.insertId);
       userRole = "user";
       userName = null;
+      avatarUrl = null;
     }
 
     const token = await createSessionToken({
@@ -88,7 +98,10 @@ export async function POST(req: Request) {
       phone,
       role: userRole,
       name: userName,
+      avatarUrl,
     });
+
+    const profileComplete = Boolean(userName?.trim() && avatarUrl?.trim());
 
     const res = NextResponse.json({
       ok: true,
@@ -97,6 +110,8 @@ export async function POST(req: Request) {
         phone,
         role: userRole,
         name: userName,
+        avatarUrl,
+        profileComplete,
       },
     });
     const cookie = sessionCookieOptions(token);

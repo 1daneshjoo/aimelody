@@ -41,9 +41,6 @@ export function Footer() {
             <li>
               <Link href="/login">ورود پیامکی</Link>
             </li>
-            <li>
-              <Link href="/admin">پنل مدیریت</Link>
-            </li>
           </ul>
         </div>
       </div>

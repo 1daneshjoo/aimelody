@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { competitions } from "@/data/mock";
-import { buildDlUrl, kindFromTrackType } from "@/lib/media";
+import { requestSignedUpload, uploadToSignedUrl } from "@/lib/upload";
 import { cn } from "@/lib/utils";
 
 const steps = ["اطلاعات اثر", "فایل و کاور", "عوامل و حقوق", "جزئیات تکمیلی", "بازبینی"];
@@ -15,10 +17,23 @@ const vocalSources = [
 ];
 
 export default function UploadPage() {
+  return (
+    <Suspense>
+      <UploadForm />
+    </Suspense>
+  );
+}
+
+function UploadForm() {
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [form, setForm] = useState({
     title: "",
     type: "audio",
@@ -34,54 +49,71 @@ export default function UploadPage() {
     prompt: "",
     description: "",
     competitionId: "",
-    fileName: "",
-    coverName: "",
-    fileLink: "",
   });
 
   const update = (key: string, value: string | boolean) =>
     setForm((f) => ({ ...f, [key]: value }));
 
-  const mediaKind = kindFromTrackType(form.type as "audio" | "video");
-  const uploadDate = useMemo(() => new Date(), []);
-
-  const predictedMediaUrl = useMemo(() => {
-    if (form.fileLink.trim()) return form.fileLink.trim();
-    if (!form.fileName) return "";
-    return buildDlUrl(mediaKind, form.fileName, uploadDate);
-  }, [form.fileLink, form.fileName, mediaKind, uploadDate]);
-
-  const predictedCoverUrl = useMemo(() => {
-    if (!form.coverName) return "";
-    return buildDlUrl("covers", form.coverName, uploadDate);
-  }, [form.coverName, uploadDate]);
-
-  const simulateUpload = () => {
+  const submitUpload = async () => {
+    if (!mediaFile || !coverFile) return;
     setUploading(true);
     setProgress(0);
-    const timer = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(timer);
-          setUploading(false);
-          setDone(true);
-          return 100;
-        }
-        return p + 8;
+    setError("");
+    try {
+      const mediaSigned = await requestSignedUpload({
+        fileName: mediaFile.name,
+        contentType: mediaFile.type || (form.type === "video" ? "video/mp4" : "audio/mpeg"),
+        mediaType: form.type === "video" ? "video" : "audio",
+        sizeBytes: mediaFile.size,
       });
-    }, 180);
+      await uploadToSignedUrl(mediaFile, mediaSigned, (p) => setProgress(Math.min(70, p * 0.7)));
+
+      const coverSigned = await requestSignedUpload({
+        fileName: coverFile.name,
+        contentType: coverFile.type || "image/jpeg",
+        mediaType: "cover",
+        sizeBytes: coverFile.size,
+      });
+      await uploadToSignedUrl(coverFile, coverSigned, (p) => setProgress(70 + Math.round(p * 0.3)));
+
+      setProgress(100);
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "آپلود ناموفق بود");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const vocalSourceLabel =
     vocalSources.find((v) => v.value === form.vocalSource)?.label ?? form.vocalSource;
 
-  const monthFolder = String(uploadDate.getMonth() + 1).padStart(2, "0");
+  if (authLoading) {
+    return (
+      <div className="container-page py-16 text-center text-muted">در حال بارگذاری...</div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="container-page py-16 text-center">
+        <p className="text-muted">برای ارسال اثر ابتدا وارد شوید.</p>
+        <button
+          type="button"
+          className="btn btn-primary mt-4"
+          onClick={() => router.push("/login")}
+        >
+          ورود
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="container-page max-w-3xl py-10">
       <h1 className="section-title">ارسال اثر</h1>
       <p className="section-sub">
-        فایل‌های صوت و ویدئو روی dl.aimelody.ir ذخیره و بر اساس ماه آپلود پوشه‌بندی می‌شوند.
+        فایل‌ها به‌صورت امن آپلود می‌شوند و پس از بررسی در سایت نمایش داده خواهند شد.
       </p>
 
       <div className="mb-8 flex gap-2 overflow-x-auto pb-1">
@@ -89,7 +121,7 @@ export default function UploadPage() {
           <button
             key={label}
             type="button"
-            onClick={() => setStep(i)}
+            onClick={() => !uploading && setStep(i)}
             className={cn(
               "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap",
               step === i
@@ -163,42 +195,16 @@ export default function UploadPage() {
 
         {step === 1 && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-line bg-bg-soft p-4 text-sm text-muted">
-              <p className="font-bold text-text">مسیر ذخیره‌سازی ماهانه</p>
-              <p className="mt-1" dir="ltr">
-                https://dl.aimelody.ir/{mediaKind}/{uploadDate.getFullYear()}/{monthFolder}/
-              </p>
-              <p className="mt-2 text-xs">
-                کاور:{" "}
-                <span dir="ltr">
-                  covers/{uploadDate.getFullYear()}/{monthFolder}/
-                </span>
-              </p>
-            </div>
-
             <Field label="آپلود فایل اصلی *">
               <input
                 type="file"
                 accept={form.type === "audio" ? "audio/*" : "video/*"}
                 className="field"
-                onChange={(e) => update("fileName", e.target.files?.[0]?.name ?? "")}
+                onChange={(e) => setMediaFile(e.target.files?.[0] ?? null)}
               />
-              {predictedMediaUrl && (
-                <p className="mt-2 break-all text-xs text-accent" dir="ltr">
-                  {predictedMediaUrl}
-                </p>
+              {mediaFile && (
+                <p className="mt-2 text-xs text-muted">فایل انتخاب‌شده: {mediaFile.name}</p>
               )}
-            </Field>
-
-            <Field label="یا لینک مستقیم روی dl.aimelody.ir">
-              <input
-                value={form.fileLink}
-                onChange={(e) => update("fileLink", e.target.value)}
-                className="field"
-                dir="ltr"
-                placeholder="https://dl.aimelody.ir/audio/2026/07/example.mp3"
-              />
-              <p className="mt-1 text-xs text-muted">فقط لینک از دامنه dl.aimelody.ir</p>
             </Field>
 
             <Field
@@ -212,19 +218,17 @@ export default function UploadPage() {
                 type="file"
                 accept="image/*"
                 className="field"
-                onChange={(e) => update("coverName", e.target.files?.[0]?.name ?? "")}
+                onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
               />
-              {predictedCoverUrl && (
-                <p className="mt-2 break-all text-xs text-accent" dir="ltr">
-                  {predictedCoverUrl}
-                </p>
+              {coverFile && (
+                <p className="mt-2 text-xs text-muted">کاور انتخاب‌شده: {coverFile.name}</p>
               )}
             </Field>
 
             {(uploading || progress > 0) && (
               <div>
                 <div className="mb-2 flex justify-between text-sm">
-                  <span>پیشرفت آپلود به dl.aimelody.ir (Signed URL دمو)</span>
+                  <span>پیشرفت آپلود</span>
                   <span>{progress}٪</span>
                 </div>
                 <div className="progress-bar">
@@ -344,16 +348,31 @@ export default function UploadPage() {
             <Row label="عنوان" value={form.title || "—"} />
             <Row label="نوع" value={form.type === "audio" ? "صوتی" : "ویدئویی"} />
             <Row label="ژانر" value={form.genre} />
-            <Row label="آدرس فایل" value={predictedMediaUrl || "—"} ltr />
-            <Row label="آدرس کاور" value={predictedCoverUrl || "—"} ltr />
+            <Row label="فایل اثر" value={mediaFile ? "آماده ارسال" : "انتخاب نشده"} />
+            <Row label="کاور" value={coverFile ? "آماده ارسال" : "انتخاب نشده"} />
             <Row label="شاعر" value={form.lyricist || "—"} />
             <Row label="آهنگساز" value={form.composer || "—"} />
             <Row label="مالک صدا" value={form.vocalOwner || "—"} />
             <Row label="منبع صدا" value={vocalSourceLabel} />
             <Row label="تأیید حقوق" value={form.rightsConfirm ? "بله" : "خیر"} />
+
+            {(uploading || progress > 0) && !done && (
+              <div className="pt-2">
+                <div className="mb-2 flex justify-between text-sm">
+                  <span>پیشرفت آپلود</span>
+                  <span>{progress}٪</span>
+                </div>
+                <div className="progress-bar">
+                  <span style={{ width: `${progress}%` }} />
+                </div>
+              </div>
+            )}
+
+            {error && <p className="rounded-xl bg-danger/15 p-4 text-danger">{error}</p>}
+
             {done ? (
               <p className="rounded-xl bg-success/15 p-4 text-success">
-                اثر در صف بررسی است و فایل به مسیر ماهانه روی dl.aimelody.ir ارسال شد. (دمو)
+                اثر با موفقیت ارسال شد و در صف بررسی قرار گرفت.
               </p>
             ) : (
               <button
@@ -365,9 +384,10 @@ export default function UploadPage() {
                   !form.lyricist ||
                   !form.vocalOwner ||
                   !form.rightsConfirm ||
-                  (!form.fileName && !form.fileLink)
+                  !mediaFile ||
+                  !coverFile
                 }
-                onClick={simulateUpload}
+                onClick={() => void submitUpload()}
               >
                 {uploading ? "در حال ارسال..." : "ارسال نهایی"}
               </button>
@@ -379,7 +399,7 @@ export default function UploadPage() {
           <button
             type="button"
             className="btn btn-ghost"
-            disabled={step === 0}
+            disabled={step === 0 || uploading}
             onClick={() => setStep((s) => Math.max(0, s - 1))}
           >
             قبلی
@@ -388,6 +408,7 @@ export default function UploadPage() {
             <button
               type="button"
               className="btn btn-primary"
+              disabled={uploading}
               onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
             >
               مرحله بعد
@@ -408,21 +429,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Row({
-  label,
-  value,
-  ltr,
-}: {
-  label: string;
-  value: string;
-  ltr?: boolean;
-}) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-line py-2">
       <span className="shrink-0 text-muted">{label}</span>
-      <span className="break-all text-left font-medium" dir={ltr ? "ltr" : undefined}>
-        {value}
-      </span>
+      <span className="text-left font-medium">{value}</span>
     </div>
   );
 }

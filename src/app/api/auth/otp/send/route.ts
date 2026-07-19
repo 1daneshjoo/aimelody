@@ -48,6 +48,17 @@ export async function POST(req: Request) {
       await execute(`INSERT INTO users (phone, role) VALUES (:phone, 'user')`, { phone });
     }
 
+    // اگر خط ارسال تنظیم نشده، مستقیم حالت توسعه (بدون درخواست شبکه به IPPanel)
+    const from = process.env.IPPANEL_FROM?.trim();
+    if (!from && process.env.OTP_DEV_FALLBACK === "true") {
+      console.warn("[OTP_DEV_FALLBACK]", phone, code, "IPPANEL_FROM خالی است");
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        message: "حالت توسعه: کد در ترمینال سرور چاپ شد (خط SMS تنظیم نشده).",
+      });
+    }
+
     const message = `کد ورود AiMelody: ${code}\nاین کد تا ۵ دقیقه معتبر است.`;
     const sms = await sendOtpSms(toE164Iran(phone), message);
 
@@ -73,16 +84,14 @@ export async function POST(req: Request) {
       message: "کد تایید ارسال شد.",
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "خطای سرور";
     console.error("[otp/send]", e);
-    // اگر MySQL بالا نباشد، خطای واضح بده
+    const { formatDbError } = await import("@/lib/db");
+    const formatted = formatDbError(e);
     return NextResponse.json(
       {
         ok: false,
-        error:
-          msg.includes("ECONNREFUSED") || msg.includes("connect")
-            ? "اتصال به MySQL برقرار نشد. docker compose up -d را اجرا کنید."
-            : msg,
+        error: formatted.error,
+        ...(process.env.NODE_ENV !== "production" ? { detail: formatted.detail } : {}),
       },
       { status: 500 },
     );

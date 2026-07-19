@@ -12,13 +12,13 @@ function kindFrom(mediaType: string): MediaKind | null {
   if (mediaType === "audio") return "audio";
   if (mediaType === "video") return "video";
   if (mediaType === "cover") return "covers";
+  if (mediaType === "avatar") return "avatars";
   return null;
 }
 
 /**
- * درخواست URL امضاشده برای آپلود به dl.aimelody.ir
- * در فاز فعلی: توکن HMAC روی همین API صادر می‌شود؛
- * وقتی سرور dl آماده شد، این endpoint می‌تواند Presigned واقعی S3/nginx برگرداند.
+ * درخواست URL امضاشده برای آپلود به dl
+ * فرانت فقط uploadUrl موقت می‌گیرد؛ FTP فقط سمت سرور با رمز از env انجام می‌شود.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -81,7 +81,6 @@ export async function POST(req: NextRequest) {
         "Content-Type": body.contentType,
       },
       expiresInSec: ttl,
-      note: "فعلاً آپلود از طریق API اپ پروکسی می‌شود تا dl.aimelody.ir با Presigned واقعی پیکربندی شود.",
     });
   } catch (e) {
     console.error("[uploads/sign]", e);

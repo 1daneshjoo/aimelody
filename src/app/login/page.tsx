@@ -3,9 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refresh } = useAuth();
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
@@ -56,12 +58,17 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, code: otp }),
       });
-      const data = (await res.json()) as { ok: boolean; error?: string };
+      const data = (await res.json()) as {
+        ok: boolean;
+        error?: string;
+        user?: { profileComplete?: boolean };
+      };
       if (!data.ok) {
         setError(data.error || "تایید ناموفق بود");
         return;
       }
-      router.push("/dashboard");
+      await refresh();
+      router.push(data.user?.profileComplete ? "/dashboard" : "/profile/setup");
       router.refresh();
     } catch {
       setError("خطای شبکه");

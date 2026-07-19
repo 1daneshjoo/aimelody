@@ -1,7 +1,10 @@
-/** CDN / download base for media files */
-export const DL_BASE = "https://dl.aimelody.ir";
+/** CDN / download base for media files (public URL, not FTP host) */
+export const DL_BASE =
+  process.env.NEXT_PUBLIC_DL_BASE_URL ||
+  process.env.DL_BASE_URL ||
+  "https://dl.aimelody.ir";
 
-export type MediaKind = "audio" | "video" | "covers";
+export type MediaKind = "audio" | "video" | "covers" | "avatars";
 
 /** Sanitize uploaded filename for CDN path */
 export function sanitizeFileName(name: string) {
@@ -14,7 +17,7 @@ export function sanitizeFileName(name: string) {
 }
 
 /**
- * Monthly folder path on dl.aimelody.ir
+ * Monthly folder path on dl CDN
  * Example: https://dl.aimelody.ir/audio/2026/07/shabhaye-tehran.mp3
  */
 export function buildDlUrl(
@@ -28,7 +31,7 @@ export function buildDlUrl(
   return `${DL_BASE}/${kind}/${year}/${month}/${safe}`;
 }
 
-/** Relative storage path (for backend / display) */
+/** Relative storage path (for backend / FTP) */
 export function buildDlPath(
   kind: MediaKind,
   fileName: string,
@@ -57,4 +60,3 @@ export function coverThumbUrl(url: string, _size = COVER_THUMB_SIZE) {
 export function avatarThumbUrl(url: string, _size = 160) {
   return url;
 }
-

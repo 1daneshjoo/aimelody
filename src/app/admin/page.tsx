@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { displayName, useAuth } from "@/components/auth/AuthProvider";
 import {
   ads,
   competitions,
-  currentUser,
   formatNumber,
   tracks,
 } from "@/data/mock";
@@ -18,15 +20,36 @@ const tabs = [
 ] as const;
 
 export default function AdminPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("tracks");
   const [statuses, setStatuses] = useState<Record<string, string>>(
     Object.fromEntries(tracks.map((t) => [t.id, t.status])),
   );
 
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
+    if (user.role !== "admin") {
+      router.replace("/dashboard");
+    }
+  }, [loading, user, router]);
+
   const pendingCount = useMemo(
     () => Object.values(statuses).filter((s) => s === "pending").length,
     [statuses],
   );
+
+  if (loading || !user || user.role !== "admin") {
+    return (
+      <div className="container-page py-16 text-center text-muted">
+        در حال بررسی دسترسی مدیریت...
+      </div>
+    );
+  }
 
   return (
     <div className="container-page py-10">
@@ -34,10 +57,13 @@ export default function AdminPage() {
         <div>
           <h1 className="section-title">پنل مدیریت</h1>
           <p className="section-sub mb-0">
-            تایید آثار، مسابقات، تبلیغات و کاربران — داده دمو
+            مدیر: {displayName(user)} · {user.phone}
           </p>
         </div>
         <span className="badge">{pendingCount} اثر در انتظار</span>
+        <Link href="/dashboard" className="btn btn-ghost text-sm">
+          داشبورد
+        </Link>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -151,18 +177,17 @@ export default function AdminPage() {
               <tr className="border-b border-line">
                 <td className="p-3">
                   <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={currentUser.avatar}
-                      alt=""
-                      className="size-8 rounded-full object-cover"
-                    />
-                    {currentUser.name}
+                    <span className="flex size-8 items-center justify-center rounded-full bg-accent-soft text-sm text-accent">
+                      {displayName(user).slice(0, 1)}
+                    </span>
+                    {displayName(user)}
                   </div>
                 </td>
-                <td className="p-3">{currentUser.phone}</td>
-                <td className="p-3">{currentUser.role}</td>
-                <td className="p-3">{currentUser.joinedAt}</td>
+                <td className="p-3" dir="ltr">
+                  {user.phone}
+                </td>
+                <td className="p-3">{user.role}</td>
+                <td className="p-3">—</td>
               </tr>
               <tr className="border-b border-line">
                 <td className="p-3">

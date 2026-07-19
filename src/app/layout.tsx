@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Vazirmatn } from "next/font/google";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ProfileGate } from "@/components/auth/ProfileGate";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { MobileNav } from "@/components/layout/MobileNav";
@@ -47,15 +49,19 @@ export default function RootLayout({
       </head>
       <body className={`${vazirmatn.className} flex min-h-full flex-col antialiased`}>
         <ThemeProvider>
-          <LibraryProvider>
-            <PlayerProvider>
-              <Header />
-              <main className="flex-1 pb-36 md:pb-28">{children}</main>
-              <Footer />
-              <MiniPlayer />
-              <MobileNav />
-            </PlayerProvider>
-          </LibraryProvider>
+          <AuthProvider>
+            <ProfileGate>
+              <LibraryProvider>
+                <PlayerProvider>
+                  <Header />
+                  <main className="flex-1 pb-36 md:pb-28">{children}</main>
+                  <Footer />
+                  <MiniPlayer />
+                  <MobileNav />
+                </PlayerProvider>
+              </LibraryProvider>
+            </ProfileGate>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

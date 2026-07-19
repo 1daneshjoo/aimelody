@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Upload, X } from "lucide-react";
+import { LogIn, Menu, Upload, X } from "lucide-react";
 import { useState } from "react";
+import { displayName, useAuth } from "@/components/auth/AuthProvider";
 import { LiveSearch } from "@/components/search/LiveSearch";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
-import { currentUser } from "@/data/mock";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -19,6 +19,7 @@ const links = [
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { user, loading, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-[color-mix(in_oklab,var(--bg)_82%,transparent)] backdrop-blur-xl">
@@ -52,18 +53,33 @@ export function Header() {
             <Upload size={15} />
             <span className="hidden sm:inline">ارسال اثر</span>
           </Link>
-          <Link
-            href="/dashboard"
-            className="hidden items-center gap-2 rounded-full border border-line py-1 pr-1 pl-3 sm:flex"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              className="size-8 rounded-full object-cover"
-            />
-            <span className="text-sm">{currentUser.name.split(" ")[0]}</span>
-          </Link>
+
+          {!loading && user ? (
+            <Link
+              href="/dashboard"
+              className="hidden items-center gap-2 rounded-full border border-line py-1 pr-1 pl-3 sm:flex"
+            >
+              {user.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.avatarUrl}
+                  alt=""
+                  className="size-8 rounded-full object-cover"
+                />
+              ) : (
+                <span className="size-8 rounded-full bg-accent-soft text-center text-sm leading-8 text-accent">
+                  {displayName(user).slice(0, 1)}
+                </span>
+              )}
+              <span className="max-w-24 truncate text-sm">{displayName(user)}</span>
+            </Link>
+          ) : !loading ? (
+            <Link href="/login" className="btn btn-ghost hidden !px-3 !py-2 text-sm sm:inline-flex">
+              <LogIn size={15} />
+              ورود
+            </Link>
+          ) : null}
+
           <button
             type="button"
             className="btn btn-ghost !px-3 lg:hidden"
@@ -93,27 +109,45 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
-              <Link
-                href="/dashboard"
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-2.5 text-muted"
-              >
-                داشبورد من
-              </Link>
-              <Link
-                href="/admin"
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-2.5 text-muted"
-              >
-                پنل مدیریت
-              </Link>
-              <Link
-                href="/login"
-                onClick={() => setOpen(false)}
-                className="rounded-xl px-3 py-2.5 text-muted"
-              >
-                ورود / ثبت‌نام
-              </Link>
+
+              {user ? (
+                <>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setOpen(false)}
+                    className="rounded-xl px-3 py-2.5 text-muted"
+                  >
+                    داشبورد من
+                  </Link>
+                  {user.role === "admin" && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setOpen(false)}
+                      className="rounded-xl px-3 py-2.5 text-muted"
+                    >
+                      پنل مدیریت
+                    </Link>
+                  )}
+                  <button
+                    type="button"
+                    className="rounded-xl px-3 py-2.5 text-right text-muted"
+                    onClick={() => {
+                      setOpen(false);
+                      void logout();
+                    }}
+                  >
+                    خروج
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-muted"
+                >
+                  ورود / ثبت‌نام
+                </Link>
+              )}
             </nav>
           </div>
         </div>

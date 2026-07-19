@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Heart, Music2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Heart } from "lucide-react";
+import { displayName, useAuth } from "@/components/auth/AuthProvider";
 import { useLibrary } from "@/components/library/LibraryProvider";
-import { currentUser, getTrackById, getUserTracks, getAllArtists } from "@/data/mock";
-import { statusLabel, cn } from "@/lib/utils";
+import { getTrackById, getAllArtists } from "@/data/mock";
+import { cn } from "@/lib/utils";
 
 const tabs = [
   { id: "profile", label: "پروفایل" },
@@ -15,31 +17,61 @@ const tabs = [
 ] as const;
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("works");
-  const myTracks = getUserTracks(currentUser.id);
   const { favoriteIds, followingIds, toggleFavorite } = useLibrary();
   const favorites = favoriteIds.map((id) => getTrackById(id)).filter(Boolean);
   const following = getAllArtists().filter((a) => followingIds.includes(a.id));
 
+  useEffect(() => {
+    if (!loading && !user) router.replace("/login");
+  }, [loading, user, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="container-page py-16 text-center text-muted">در حال بارگذاری...</div>
+    );
+  }
+
   return (
     <div className="container-page py-10">
       <div className="surface mb-8 flex flex-wrap items-center gap-4 p-5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={currentUser.avatar}
-          alt={currentUser.name}
-          className="size-20 rounded-full object-cover"
-        />
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatarUrl}
+            alt=""
+            className="size-20 rounded-full object-cover"
+          />
+        ) : (
+          <span className="flex size-20 items-center justify-center rounded-full bg-accent-soft text-2xl text-accent">
+            {displayName(user).slice(0, 1)}
+          </span>
+        )}
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{currentUser.name}</h1>
-          <p className="text-sm text-muted">
-            {currentUser.phone} · عضویت از {currentUser.joinedAt}
+          <h1 className="text-2xl font-bold">{displayName(user)}</h1>
+          <p className="text-sm text-muted" dir="ltr">
+            {user.phone}
           </p>
-          <span className="badge mt-2 uppercase">{currentUser.role}</span>
+          <span className="badge mt-2 uppercase">{user.role}</span>
         </div>
-        <Link href="/upload" className="btn btn-primary text-sm">
-          اثر جدید
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/profile/setup" className="btn btn-ghost text-sm">
+            ویرایش پروفایل
+          </Link>
+          {user.role === "admin" && (
+            <Link href="/admin" className="btn btn-ghost text-sm">
+              پنل مدیریت
+            </Link>
+          )}
+          <Link href="/upload" className="btn btn-primary text-sm">
+            اثر جدید
+          </Link>
+          <button type="button" className="btn btn-ghost text-sm" onClick={() => void logout()}>
+            خروج
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -61,51 +93,25 @@ export default function DashboardPage() {
       </div>
 
       {tab === "profile" && (
-        <form className="surface max-w-xl space-y-4 p-5" onSubmit={(e) => e.preventDefault()}>
-          <label className="block space-y-2 text-sm">
-            <span className="text-muted">نام نمایشی</span>
-            <input className="field" defaultValue={currentUser.name} />
-          </label>
-          <label className="block space-y-2 text-sm">
-            <span className="text-muted">بیو</span>
-            <textarea className="field min-h-24" defaultValue={currentUser.bio} />
-          </label>
-          <button type="submit" className="btn btn-primary">
-            ذخیره تغییرات (دمو)
-          </button>
-        </form>
+        <div className="surface max-w-xl space-y-3 p-5 text-sm">
+          <p>
+            <span className="text-muted">نام نمایشی: </span>
+            {displayName(user)}
+          </p>
+          <p dir="ltr">
+            <span className="text-muted">موبایل: </span>
+            {user.phone}
+          </p>
+          <Link href="/profile/setup" className="btn btn-primary mt-2 inline-flex text-sm">
+            ویرایش نام و آواتار
+          </Link>
+        </div>
       )}
 
       {tab === "works" && (
-        <div className="space-y-3">
-          {myTracks.map((t) => (
-            <div key={t.id} className="surface flex flex-wrap items-center gap-4 p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.cover} alt="" className="size-16 rounded-xl object-cover" />
-              <div className="min-w-0 flex-1">
-                <p className="font-bold">{t.title}</p>
-                <p className="text-sm text-muted">
-                  {t.genre} · {t.createdAt}
-                </p>
-              </div>
-              <span
-                className={cn(
-                  "badge",
-                  t.status === "approved" && "text-success",
-                  t.status === "rejected" && "text-danger",
-                )}
-              >
-                <Music2 size={12} />
-                {statusLabel(t.status)}
-              </span>
-              {t.status === "approved" && (
-                <Link href={`/track/${t.id}`} className="text-sm text-accent">
-                  مشاهده
-                </Link>
-              )}
-            </div>
-          ))}
-        </div>
+        <p className="text-sm text-muted">
+          هنوز اثری از این حساب ثبت نشده. از دکمه «اثر جدید» برای آپلود استفاده کنید.
+        </p>
       )}
 
       {tab === "favorites" && (
