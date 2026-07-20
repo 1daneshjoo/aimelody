@@ -1,19 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { safeNextPath } from "@/lib/auth-routes";
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container-page py-16 text-center text-muted">در حال بارگذاری...</div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
-  const { refresh } = useAuth();
+  const searchParams = useSearchParams();
+  const { user, loading: authLoading, refresh } = useAuth();
   const [phone, setPhone] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+
+  const nextPath = safeNextPath(searchParams.get("next"), "/dashboard");
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (user) {
+      router.replace(user.profileComplete ? nextPath : "/profile/setup");
+    }
+  }, [authLoading, user, router, nextPath]);
 
   const sendOtp = async () => {
     setLoading(true);
@@ -68,7 +91,8 @@ export default function LoginPage() {
         return;
       }
       await refresh();
-      router.push(data.user?.profileComplete ? "/dashboard" : "/profile/setup");
+      const dest = data.user?.profileComplete ? nextPath : "/profile/setup";
+      router.push(dest);
       router.refresh();
     } catch {
       setError("خطای شبکه");
@@ -83,10 +107,7 @@ export default function LoginPage() {
         <p className="text-center text-3xl font-bold">
           Ai<span className="text-accent">Melody</span>
         </p>
-        <h1 className="mt-4 text-center text-xl font-bold">ورود / ثبت‌نام پیامکی</h1>
-        <p className="mt-2 text-center text-sm text-muted">
-          فقط با شماره موبایل — OTP متن آزاد (فعلاً بدون پترن IPPanel)
-        </p>
+        <h1 className="mt-4 text-center text-xl font-bold">ورود / ثبت‌نام</h1>
 
         <div className="mt-8 space-y-4">
           <label className="block space-y-2 text-sm">

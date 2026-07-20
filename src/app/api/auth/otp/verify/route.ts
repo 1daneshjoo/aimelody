@@ -93,6 +93,11 @@ export async function POST(req: Request) {
       avatarUrl = null;
     }
 
+    await execute(
+      `UPDATE users SET public_id = CONCAT('a', id) WHERE id = :id AND (public_id IS NULL OR public_id = '')`,
+      { id: userId },
+    );
+
     const token = await createSessionToken({
       id: userId,
       phone,

@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Compass, Home, LogIn, Trophy, Upload, User } from "lucide-react";
+import { AuthLink } from "@/components/auth/AuthLink";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function MobileNav() {
           const active = pathname === href || (href !== "/" && pathname.startsWith(href));
           return (
             <li key={href + label}>
-              <Link
+              <AuthLink
                 href={href}
                 className={cn(
                   "flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px]",
@@ -36,7 +36,7 @@ export function MobileNav() {
               >
                 <Icon size={18} />
                 {label}
-              </Link>
+              </AuthLink>
             </li>
           );
         })}

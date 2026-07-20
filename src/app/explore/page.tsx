@@ -4,7 +4,8 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { TrackCard } from "@/components/track/TrackCard";
 import { TrackGridSkeleton } from "@/components/track/TrackCardSkeleton";
-import { ads, genres, getApprovedTracks, sortTracks } from "@/data/mock";
+import { ads, genres, getApprovedTracks } from "@/data/mock";
+import { mergeCatalogTracks, sortTracks } from "@/lib/catalog";
 import { coverThumbUrl } from "@/lib/media";
 import type { ChartPeriod, ChartSort, MediaType, Track } from "@/types";
 import { cn } from "@/lib/utils";
@@ -58,11 +59,7 @@ function ExploreInner() {
   }, []);
 
   const list = useMemo(() => {
-    const mock = getApprovedTracks();
-    const byId = new Map<string, Track>();
-    for (const t of mock) byId.set(t.id, t);
-    for (const t of dbTracks) byId.set(t.id, t);
-    let items = [...byId.values()];
+    let items = mergeCatalogTracks(dbTracks, getApprovedTracks());
     if (genre !== "همه") items = items.filter((t) => t.genre === genre);
     if (type !== "all") items = items.filter((t) => t.type === type);
     if (q.trim()) {
@@ -71,6 +68,7 @@ function ExploreInner() {
         (t) => t.title.includes(query) || t.artist.name.includes(query) || t.genre.includes(query),
       );
     }
+    // فیلتر دوره زمانی روی createdAt فارسی سخت است؛ فعلاً همه را نگه می‌داریم
     void period;
     return sortTracks(items, sort);
   }, [genre, type, q, sort, period, dbTracks]);

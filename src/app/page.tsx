@@ -1,36 +1,71 @@
 import Link from "next/link";
 import { Trophy } from "lucide-react";
+import { AuthLink } from "@/components/auth/AuthLink";
 import { CreatorRail, TrackRail } from "@/components/home/Rails";
 import {
-  competitions,
-  formatNumber,
+  competitions as mockCompetitions,
   getApprovedTracks,
-  getPromotedTracks,
   getTopCreators,
   getTopLyricists,
-  sortTracks,
 } from "@/data/mock";
+import {
+  formatNumber,
+  getPromotedFrom,
+  getTopCreatorsFrom,
+  getTopLyricistsFrom,
+  mergeCatalogTracks,
+  sortTracks,
+} from "@/lib/catalog";
+import { getApprovedTracksFromDb, getCompetitionsFromDb } from "@/lib/tracks-server";
+import type { Competition, Track } from "@/types";
 
-export default function HomePage() {
-  const approved = getApprovedTracks();
-  const featured = getPromotedTracks()[0] ?? sortTracks(approved, "overall")[0];
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  let dbTracks: Track[] = [];
+  let dbCompetitions: Competition[] = [];
+  try {
+    dbTracks = await getApprovedTracksFromDb();
+  } catch (e) {
+    console.error("[home] tracks", e);
+  }
+  try {
+    dbCompetitions = await getCompetitionsFromDb();
+  } catch (e) {
+    console.error("[home] competitions", e);
+  }
+
+  const approved = mergeCatalogTracks(dbTracks, getApprovedTracks());
+  const featured =
+    getPromotedFrom(approved)[0] ?? sortTracks(approved, "overall")[0] ?? approved[0];
   const topMusics = sortTracks(approved, "overall").slice(0, 10);
   const topLyrics = sortTracks(approved, "lyrics").slice(0, 10);
   const topMelody = sortTracks(approved, "melody").slice(0, 10);
-  const topCreators = getTopCreators().slice(0, 10);
-  const topLyricists = getTopLyricists().slice(0, 10);
+  const newestDb = [...dbTracks].slice(0, 10);
+  const topCreators = (
+    dbTracks.length > 0 ? getTopCreatorsFrom(approved) : getTopCreators()
+  ).slice(0, 10);
+  const topLyricists = (
+    dbTracks.length > 0 ? getTopLyricistsFrom(approved) : getTopLyricists()
+  ).slice(0, 10);
+  const competitions =
+    dbCompetitions.length > 0 ? dbCompetitions : mockCompetitions;
   const activeCompetitions = competitions.filter((c) => c.status === "active");
 
   return (
     <>
       <section className="relative min-h-[min(88vh,820px)] overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={featured.cover}
-          alt=""
-          referrerPolicy="no-referrer"
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        {featured ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={featured.cover}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-bg-elevated" />
+        )}
         <div className="absolute inset-0 hero-scrim" />
         <div className="hero-glow absolute -top-24 left-1/4 h-72 w-72 rounded-full bg-accent/20 blur-3xl" />
 
@@ -48,16 +83,22 @@ export default function HomePage() {
             <Link href="/explore" className="btn btn-primary">
               ورود به آرشیو
             </Link>
-            <Link href="/upload" className="btn btn-ghost border-white/20 bg-black/25 text-white">
+            <AuthLink href="/upload" className="btn btn-ghost border-white/20 bg-black/25 text-white">
               ارسال اثر
-            </Link>
+            </AuthLink>
           </div>
         </div>
       </section>
 
       <TrackRail
+        title="جدیدترین آثار"
+        subtitle="آثار تازه تاییدشده از کاربران"
+        tracks={newestDb.length > 0 ? newestDb : topMusics.slice(0, 6)}
+        href="/explore"
+      />
+      <TrackRail
         title="برترین موزیک‌ها"
-        subtitle="بر اساس بالاترین امتیاز کلی"
+        subtitle="بر اساس بالاترین امتیاز کلی و آثار تاییدشده"
         tracks={topMusics}
         href="/explore"
       />
@@ -112,6 +153,9 @@ export default function HomePage() {
               </div>
             </Link>
           ))}
+          {activeCompetitions.length === 0 && (
+            <p className="text-muted">مسابقه فعالی ثبت نشده است.</p>
+          )}
         </div>
       </section>
     </>

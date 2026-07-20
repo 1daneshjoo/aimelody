@@ -8,21 +8,59 @@ import {
   getArtistById,
   getTracksByArtist,
 } from "@/data/mock";
+import {
+  getApprovedTracksByArtistUserId,
+  getArtistByParam,
+} from "@/lib/tracks-server";
 
 type Props = { params: Promise<{ id: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const artist = getArtistById(id);
-  return { title: artist?.name ?? "هنرمند" };
+  try {
+    const artist = await getArtistByParam(id);
+    if (artist) return { title: artist.name };
+  } catch {
+    // fallback mock
+  }
+  const mock = getArtistById(id);
+  return { title: mock?.name ?? "هنرمند" };
 }
 
 export default async function ArtistPage({ params }: Props) {
   const { id } = await params;
-  const artist = getArtistById(id);
-  if (!artist) notFound();
 
-  const works = getTracksByArtist(artist.id);
+  let artist = null as Awaited<ReturnType<typeof getArtistByParam>>;
+  let works = [] as Awaited<ReturnType<typeof getApprovedTracksByArtistUserId>>;
+
+  try {
+    artist = await getArtistByParam(id);
+    if (artist) {
+      works = await getApprovedTracksByArtistUserId(artist.userId);
+    }
+  } catch (e) {
+    console.error("[artist]", e);
+  }
+
+  if (!artist) {
+    const mockArtist = getArtistById(id);
+    if (!mockArtist) notFound();
+    const mockWorks = getTracksByArtist(mockArtist.id);
+    return <ArtistView artist={mockArtist} works={mockWorks} />;
+  }
+
+  return <ArtistView artist={artist} works={works} />;
+}
+
+function ArtistView({
+  artist,
+  works,
+}: {
+  artist: { id: string; name: string; avatar: string; bio?: string };
+  works: ReturnType<typeof getTracksByArtist>;
+}) {
   const avg =
     works.length > 0
       ? works.reduce((s, t) => s + t.ratings.overall, 0) / works.length
@@ -45,7 +83,13 @@ export default async function ArtistPage({ params }: Props) {
           <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted">
             <span>{formatNumber(works.length)} اثر</span>
             <span>·</span>
-            <span>میانگین {avg.toFixed(1)}</span>
+            <span>
+              میانگین{" "}
+              {new Intl.NumberFormat("fa-IR", {
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 1,
+              }).format(avg)}
+            </span>
             <span>·</span>
             <span>{formatNumber(plays)} پخش</span>
           </div>
@@ -56,7 +100,7 @@ export default async function ArtistPage({ params }: Props) {
       <div className="mb-4 flex items-end justify-between gap-3">
         <h2 className="section-title mb-0 text-xl">آثار {artist.name}</h2>
         <Link href="/explore" className="text-sm text-accent">
-          اکتشاف بیشتر
+          آرشیو
         </Link>
       </div>
 

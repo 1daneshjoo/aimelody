@@ -1,9 +1,14 @@
-import { mkdir, writeFile } from "fs/promises";
+import { execFile } from "child_process";
+import { mkdir, unlink, writeFile } from "fs/promises";
+import { tmpdir } from "os";
 import path from "path";
 import { Readable } from "stream";
+import { promisify } from "util";
 import CpanelFormData from "form-data";
 import { Agent, fetch as undiciFetch } from "undici";
 import { Client } from "basic-ftp";
+
+const execFileAsync = promisify(execFile);
 
 function stripQuotes(value: string | undefined) {
   if (!value) return "";
@@ -149,6 +154,106 @@ async function ensureCpanelDirs(relativeDir: string) {
   return parent;
 }
 
+/** مسیر مطلق → مسیر نسبی نسبت به home کاربر (الزام UAPI) مثل public_html/uploads/... */
+function toCpanelHomeRelative(absolutePath: string): string {
+  const abs = absolutePath.replace(/\\/g, "/").replace(/\/+$/, "") || "/";
+  const homeMatch = abs.match(/^\/home\/[^/]+\/(.+)$/);
+  if (homeMatch) return homeMatch[1];
+
+  const docroot = process.env.DL_CPANEL_DOCROOT!.replace(/\/+$/, "").replace(/\\/g, "/");
+  const home = docroot.replace(/\/[^/]+$/, "");
+  if (abs === docroot || abs.startsWith(`${docroot}/`)) {
+    const rest = abs.slice(docroot.length).replace(/^\/+/, "");
+    const leaf = docroot.split("/").pop() || "public_html";
+    return rest ? `${leaf}/${rest}` : leaf;
+  }
+  if (abs.startsWith(`${home}/`)) return abs.slice(home.length + 1);
+  return abs.replace(/^\/+/, "");
+}
+
+function parseCpanelUploadResponse(text: string, httpStatus: number) {
+  let raw: { status?: number; errors?: string[] | null; data?: { succeeded?: number } } = {};
+  try {
+    raw = JSON.parse(text) as typeof raw;
+  } catch {
+    throw new Error(`cPanel upload پاسخ نامعتبر: ${text.slice(0, 200)}`);
+  }
+  if (httpStatus < 200 || httpStatus >= 300 || raw.status !== 1 || !raw.data?.succeeded) {
+    const err = raw.errors?.join("; ") || `HTTP ${httpStatus}`;
+    throw new Error(`آپلود سی‌پنل ناموفق: ${err}`);
+  }
+}
+
+/** آپلود با بافر multipart — undici استریم form-data را درست نمی‌فرستد */
+async function uploadViaCpanelBuffer(
+  base: string,
+  relativeDir: string,
+  remoteFile: string,
+  bytes: Buffer,
+  contentType: string,
+  user: string,
+  password: string,
+) {
+  const form = new CpanelFormData();
+  form.append("dir", relativeDir);
+  form.append("file-1", bytes, {
+    filename: remoteFile,
+    contentType,
+    knownLength: bytes.length,
+  });
+
+  const body = form.getBuffer();
+  const headers = form.getHeaders();
+  const res = await undiciFetch(`${base}/execute/Fileman/upload_files`, {
+    method: "POST",
+    headers: {
+      ...headers,
+      "Content-Length": String(body.length),
+      Authorization: basicAuth(user, password),
+    },
+    body,
+    dispatcher: cpanelAgent,
+  });
+  const text = await res.text();
+  parseCpanelUploadResponse(text, res.status);
+}
+
+/** فال‌بک مطمئن با curl (همان روش رسمی مستندات سی‌پنل) */
+async function uploadViaCpanelCurl(
+  base: string,
+  relativeDir: string,
+  remoteFile: string,
+  bytes: Buffer,
+  contentType: string,
+  user: string,
+  password: string,
+) {
+  const tmp = path.join(
+    tmpdir(),
+    `aimelody-up-${Date.now()}-${remoteFile.replace(/[^\w.-]+/g, "_")}`,
+  );
+  await writeFile(tmp, bytes);
+  try {
+    const args = [
+      "-sk",
+      "-u",
+      `${user}:${password}`,
+      "-F",
+      `dir=${relativeDir}`,
+      "-F",
+      `file-1=@${tmp};filename=${remoteFile};type=${contentType}`,
+      `${base}/execute/Fileman/upload_files`,
+    ];
+    const { stdout } = await execFileAsync("curl", args, {
+      maxBuffer: 8 * 1024 * 1024,
+      windowsHide: true,
+    });
+    parseCpanelUploadResponse(String(stdout), 200);
+  } finally {
+    await unlink(tmp).catch(() => {});
+  }
+}
+
 /** آپلود مستقیم فایل روی هاست از طریق API سی‌پنل (HTTPS :2083) */
 export async function uploadViaCpanel(storagePath: string, bytes: Buffer, contentType?: string) {
   if (!isDlCpanelConfigured()) {
@@ -159,55 +264,34 @@ export async function uploadViaCpanel(storagePath: string, bytes: Buffer, conten
   const normalized = storagePath.replace(/\\/g, "/").replace(/^\/+/, "");
   const remoteDir = path.posix.dirname(normalized);
   const remoteFile = path.posix.basename(normalized);
+  const mime = contentType || "application/octet-stream";
 
   if (remoteDir && remoteDir !== ".") {
     await ensureCpanelDirs(remoteDir);
   }
 
-  const targetDir =
+  const absoluteDir =
     remoteDir && remoteDir !== "." ? `${docroot}/${remoteDir}` : docroot;
+  const relativeDir = toCpanelHomeRelative(absoluteDir);
 
   const user = process.env.DL_CPANEL_USER!.trim();
   const password = stripQuotes(process.env.DL_CPANEL_PASSWORD);
 
   let lastError: unknown;
   for (const base of cpanelBases()) {
-    const form = new CpanelFormData();
-    form.append("dir", targetDir);
-    form.append("file-1", bytes, {
-      filename: remoteFile,
-      contentType: contentType || "application/octet-stream",
-    });
-
-    const url = `${base}/execute/Fileman/upload_files`;
     try {
-      const res = await undiciFetch(url, {
-        method: "POST",
-        headers: {
-          ...form.getHeaders(),
-          Authorization: basicAuth(user, password),
-        },
-        body: form as unknown as import("undici").BodyInit,
-        dispatcher: cpanelAgent,
-      });
-      const text = await res.text();
-
-      let raw: { status?: number; errors?: string[] | null; data?: { succeeded?: number } } = {};
-      try {
-        raw = JSON.parse(text) as typeof raw;
-      } catch {
-        throw new Error(`cPanel upload پاسخ نامعتبر: ${text.slice(0, 200)}`);
-      }
-
-      if (!res.ok || raw.status !== 1 || !raw.data?.succeeded) {
-        const err = raw.errors?.join("; ") || `HTTP ${res.status}`;
-        throw new Error(`آپلود سی‌پنل ناموفق: ${err}`);
-      }
-
+      await uploadViaCpanelBuffer(base, relativeDir, remoteFile, bytes, mime, user, password);
       return normalized;
     } catch (e) {
       lastError = e;
-      console.warn("[uploadViaCpanel] failed via", base, e instanceof Error ? e.message : e);
+      console.warn("[uploadViaCpanel] buffer failed via", base, e instanceof Error ? e.message : e);
+      try {
+        await uploadViaCpanelCurl(base, relativeDir, remoteFile, bytes, mime, user, password);
+        return normalized;
+      } catch (e2) {
+        lastError = e2;
+        console.warn("[uploadViaCpanel] curl failed via", base, e2 instanceof Error ? e2.message : e2);
+      }
     }
   }
 

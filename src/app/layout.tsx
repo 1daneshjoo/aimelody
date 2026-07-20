@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Vazirmatn } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { AuthGate } from "@/components/auth/AuthGate";
 import { ProfileGate } from "@/components/auth/ProfileGate";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -44,23 +46,28 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl" className={`${vazirmatn.variable} h-full`} data-theme="light" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
-      <body className={`${vazirmatn.className} flex min-h-full flex-col antialiased`}>
+      <body
+        className={`${vazirmatn.className} flex min-h-full flex-col antialiased`}
+        suppressHydrationWarning
+      >
+        <Script id="aimelody-theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         <ThemeProvider>
           <AuthProvider>
-            <ProfileGate>
-              <LibraryProvider>
-                <PlayerProvider>
-                  <Header />
-                  <main className="flex-1 pb-36 md:pb-28">{children}</main>
-                  <Footer />
-                  <MiniPlayer />
-                  <MobileNav />
-                </PlayerProvider>
-              </LibraryProvider>
-            </ProfileGate>
+            <AuthGate>
+              <ProfileGate>
+                <LibraryProvider>
+                  <PlayerProvider>
+                    <Header />
+                    <main className="flex-1 pb-36 md:pb-28">{children}</main>
+                    <Footer />
+                    <MiniPlayer />
+                    <MobileNav />
+                  </PlayerProvider>
+                </LibraryProvider>
+              </ProfileGate>
+            </AuthGate>
           </AuthProvider>
         </ThemeProvider>
       </body>

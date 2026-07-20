@@ -1,6 +1,7 @@
 "use client";
 
 import type { Track } from "@/types";
+import { recordPlayOnce } from "@/lib/record-play";
 
 export function VideoPlayer({ track }: { track: Track }) {
   return (
@@ -12,6 +13,7 @@ export function VideoPlayer({ track }: { track: Track }) {
           poster={track.cover}
           preload="metadata"
           src={track.mediaUrl}
+          onPlay={() => recordPlayOnce(track.id)}
         />
         <div className="pointer-events-none absolute top-3 right-3 rounded-md bg-black/60 px-2 py-1 text-xs">
           پیش‌نمایش اسپانسر · Pre-roll دمو

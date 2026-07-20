@@ -1,3 +1,9 @@
+import {
+  formatNumber as formatNumberCatalog,
+  getTopCreatorsFrom,
+  getTopLyricistsFrom,
+  sortTracks as sortTracksCatalog,
+} from "@/lib/catalog";
 import type {
   AdBanner,
   Comment,
@@ -514,94 +520,19 @@ export function sortTracks(
   list: Track[],
   sort: "overall" | "lyrics" | "melody" | "vocals" | "visual" | "popular",
 ) {
-  return [...list].sort((a, b) => {
-    if (sort === "popular") return b.plays - a.plays;
-    if (sort === "visual") {
-      return (b.ratings.visual ?? 0) - (a.ratings.visual ?? 0);
-    }
-    return b.ratings[sort] - a.ratings[sort];
-  });
+  return sortTracksCatalog(list, sort);
 }
 
 export function formatNumber(n: number) {
-  return new Intl.NumberFormat("fa-IR").format(n);
+  return formatNumberCatalog(n);
 }
 
 export function getTopCreators(): CreatorRank[] {
-  const map = new Map<
-    string,
-    { id: string; name: string; avatar: string; bio?: string; sum: number; count: number }
-  >();
-
-  for (const t of getApprovedTracks()) {
-    const prev = map.get(t.artist.id);
-    if (prev) {
-      prev.sum += t.ratings.overall;
-      prev.count += 1;
-    } else {
-      map.set(t.artist.id, {
-        id: t.artist.id,
-        name: t.artist.name,
-        avatar: t.artist.avatar,
-        bio: t.artist.bio,
-        sum: t.ratings.overall,
-        count: 1,
-      });
-    }
-  }
-
-  return [...map.values()]
-    .map((c) => {
-      const avg = c.sum / c.count;
-      return {
-        id: c.id,
-        name: c.name,
-        avatar: c.avatar,
-        bio: c.bio,
-        metricLabel: "میانگین امتیاز",
-        metricValue: avg.toFixed(1),
-        score: avg,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+  return getTopCreatorsFrom(getApprovedTracks());
 }
 
 export function getTopLyricists(): CreatorRank[] {
-  const map = new Map<
-    string,
-    { name: string; avatar: string; sum: number; count: number }
-  >();
-
-  for (const t of getApprovedTracks()) {
-    if (!t.lyricist) continue;
-    const prev = map.get(t.lyricist);
-    const avatar = lyricistAvatars[t.lyricist] ?? t.artist.avatar;
-    if (prev) {
-      prev.sum += t.ratings.lyrics;
-      prev.count += 1;
-    } else {
-      map.set(t.lyricist, {
-        name: t.lyricist,
-        avatar,
-        sum: t.ratings.lyrics,
-        count: 1,
-      });
-    }
-  }
-
-  return [...map.entries()]
-    .map(([id, c]) => {
-      const avg = c.sum / c.count;
-      return {
-        id,
-        name: c.name,
-        avatar: c.avatar,
-        metricLabel: "میانگین شعر",
-        metricValue: avg.toFixed(1),
-        score: avg,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+  return getTopLyricistsFrom(getApprovedTracks());
 }
 
 export function getMostProlificCreators(): CreatorRank[] {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AuthLink } from "@/components/auth/AuthLink";
 
 export function Footer() {
   return (
@@ -22,10 +23,10 @@ export function Footer() {
               <Link href="/competitions">مسابقات</Link>
             </li>
             <li>
-              <Link href="/upload">ارسال اثر</Link>
+              <AuthLink href="/upload">ارسال اثر</AuthLink>
             </li>
             <li>
-              <Link href="/dashboard">داشبورد</Link>
+              <AuthLink href="/dashboard">داشبورد</AuthLink>
             </li>
           </ul>
         </div>
@@ -39,7 +40,7 @@ export function Footer() {
               <Link href="/terms">قوانین و مقررات</Link>
             </li>
             <li>
-              <Link href="/login">ورود پیامکی</Link>
+              <Link href="/login">ثبت نام/ورود</Link>
             </li>
           </ul>
         </div>

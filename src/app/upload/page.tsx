@@ -147,15 +147,8 @@ function UploadForm() {
 
   if (!user) {
     return (
-      <div className="container-page py-16 text-center">
-        <p className="text-muted">برای ارسال اثر ابتدا وارد شوید.</p>
-        <button
-          type="button"
-          className="btn btn-primary mt-4"
-          onClick={() => router.push("/login")}
-        >
-          ورود
-        </button>
+      <div className="container-page py-16 text-center text-muted">
+        در حال انتقال به صفحه ورود...
       </div>
     );
   }

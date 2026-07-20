@@ -2,33 +2,41 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Sparkles } from "lucide-react";
+import { ArtistActions } from "@/components/artist/ArtistActions";
 import { AudioPlayer } from "@/components/track/AudioPlayer";
 import { Comments } from "@/components/track/Comments";
 import { RatingForm } from "@/components/track/RatingForm";
+import { TrackStats } from "@/components/track/TrackStats";
 import { VideoPlayer } from "@/components/track/VideoPlayer";
 import {
-  formatNumber,
   getCommentsByTrack,
   getCompetitionById,
   getTrackById,
   vocalSourceLabel,
 } from "@/data/mock";
+import { getCommentsForTrackPublicId } from "@/lib/social";
 import { getTrackByPublicId } from "@/lib/tracks-server";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const track = (await getTrackByPublicId(id)) ?? getTrackById(id);
+  const track = (await getTrackByPublicId(id).catch(() => null)) ?? getTrackById(id);
   return { title: track?.title ?? "اثر یافت نشد" };
 }
 
 export default async function TrackPage({ params }: Props) {
   const { id } = await params;
-  const track = (await getTrackByPublicId(id)) ?? getTrackById(id);
+  const track = (await getTrackByPublicId(id).catch(() => null)) ?? getTrackById(id);
   if (!track || track.status !== "approved") notFound();
 
-  const trackComments = getCommentsByTrack(track.id);
+  let trackComments = getCommentsByTrack(track.id);
+  try {
+    trackComments = await getCommentsForTrackPublicId(track.id);
+  } catch {
+    // keep mock comments as fallback for offline/mock tracks
+  }
+
   const competition = track.competitionId
     ? getCompetitionById(track.competitionId)
     : undefined;
@@ -44,13 +52,12 @@ export default async function TrackPage({ params }: Props) {
       <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div className="space-y-6">
           <div className="surface p-5 md:p-6">
-            <div className="flex flex-wrap gap-2 text-sm text-muted">
-              <span>{formatNumber(track.plays)} پخش</span>
-              <span>·</span>
-              <span>{formatNumber(track.favorites)} علاقه‌مندی</span>
-              <span>·</span>
-              <span>{track.createdAt}</span>
-            </div>
+            <TrackStats
+              trackId={track.id}
+              plays={track.plays}
+              favorites={track.favorites}
+              createdAt={track.createdAt}
+            />
             {track.description && <p className="mt-4 text-muted">{track.description}</p>}
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -80,24 +87,41 @@ export default async function TrackPage({ params }: Props) {
             )}
           </div>
 
-          <TrackTabs lyrics={track.lyrics} prompt={track.prompt} />
+          <div className="surface p-5 md:p-6">
+            <h3 className="mb-3 font-bold">متن ترانه</h3>
+            {track.lyrics ? (
+              <pre className="whitespace-pre-wrap font-[inherit] text-muted leading-8">
+                {track.lyrics}
+              </pre>
+            ) : (
+              <p className="text-sm text-muted">متن ترانه‌ای ثبت نشده است.</p>
+            )}
+          </div>
 
-          <Comments items={trackComments} />
+          <Comments trackId={track.id} items={trackComments} />
         </div>
 
         <div className="space-y-6">
-          <div className="surface flex items-center gap-3 p-4">
+          <div className="surface flex flex-wrap items-center gap-3 p-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={track.artist.avatar}
               alt={track.artist.name}
               className="size-14 rounded-full object-cover"
             />
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-xs text-muted">سازنده</p>
-              <p className="font-bold">{track.artist.name}</p>
-              <p className="text-sm text-muted">{track.artist.bio}</p>
+              <Link
+                href={`/artist/${track.artist.id}`}
+                className="font-bold hover:text-accent"
+              >
+                {track.artist.name}
+              </Link>
+              {track.artist.bio && (
+                <p className="text-sm text-muted line-clamp-2">{track.artist.bio}</p>
+              )}
             </div>
+            <ArtistActions artistId={track.artist.id} />
           </div>
           <RatingForm track={track} />
         </div>
@@ -111,37 +135,6 @@ function Credit({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl bg-bg-soft px-3 py-3">
       <p className="text-xs text-muted">{label}</p>
       <p className="mt-1 text-sm font-bold">{value}</p>
-    </div>
-  );
-}
-
-function TrackTabs({ lyrics, prompt }: { lyrics?: string; prompt?: string }) {
-  return (
-    <div className="surface p-5 md:p-6">
-      <div className="mb-4 flex gap-4 border-b border-line text-sm">
-        <span className="tab-active pb-2">متن ترانه</span>
-        <span className="pb-2 text-muted">پرامپت</span>
-      </div>
-
-      <div className="space-y-6">
-        <div>
-          <h3 className="mb-3 font-bold">متن ترانه</h3>
-          {lyrics ? (
-            <pre className="whitespace-pre-wrap font-[inherit] text-muted leading-8">{lyrics}</pre>
-          ) : (
-            <p className="text-sm text-muted">متن ترانه‌ای ثبت نشده است.</p>
-          )}
-        </div>
-
-        <div className="border-t border-line pt-5">
-          <h3 className="mb-3 font-bold">پرامپت استفاده شده</h3>
-          {prompt ? (
-            <p className="rounded-xl bg-bg-soft p-4 text-sm text-muted">{prompt}</p>
-          ) : (
-            <p className="text-sm text-muted">پرامپتی ثبت نشده است.</p>
-          )}
-        </div>
-      </div>
     </div>
   );
 }

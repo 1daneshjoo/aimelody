@@ -1,9 +1,10 @@
--- AiMelody MySQL 8 schema
+-- AiMelody MySQL 8 schema (کامل — معادل فیلدهای mock)
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
 
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  public_id VARCHAR(32) NULL,
   phone VARCHAR(20) NOT NULL,
   name VARCHAR(120) NULL,
   avatar_url VARCHAR(500) NULL,
@@ -12,7 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
-  UNIQUE KEY uq_users_phone (phone)
+  UNIQUE KEY uq_users_phone (phone),
+  UNIQUE KEY uq_users_public_id (public_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS otp_codes (
@@ -25,6 +27,18 @@ CREATE TABLE IF NOT EXISTS otp_codes (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   KEY idx_otp_phone_created (phone, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS competitions (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  cover_url VARCHAR(500) NULL,
+  deadline DATE NULL,
+  status ENUM('upcoming', 'active', 'ended') NOT NULL DEFAULT 'active',
+  prize VARCHAR(255) NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS tracks (
@@ -58,7 +72,9 @@ CREATE TABLE IF NOT EXISTS tracks (
   UNIQUE KEY uq_tracks_public_id (public_id),
   KEY idx_tracks_user (user_id),
   KEY idx_tracks_status (status),
-  CONSTRAINT fk_tracks_user FOREIGN KEY (user_id) REFERENCES users (id)
+  KEY idx_tracks_genre (genre),
+  CONSTRAINT fk_tracks_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT fk_tracks_competition FOREIGN KEY (competition_id) REFERENCES competitions (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ratings (
@@ -108,16 +124,27 @@ CREATE TABLE IF NOT EXISTS follows (
   CONSTRAINT fk_follows_artist FOREIGN KEY (artist_user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS competitions (
+CREATE TABLE IF NOT EXISTS genres (
+  id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(64) NOT NULL,
+  sort_order SMALLINT NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_genres_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ads (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  title VARCHAR(255) NOT NULL,
-  description TEXT NULL,
-  cover_url VARCHAR(500) NULL,
-  deadline DATE NULL,
-  status ENUM('upcoming', 'active', 'ended') NOT NULL DEFAULT 'active',
-  prize VARCHAR(255) NULL,
+  public_id VARCHAR(32) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  href VARCHAR(500) NOT NULL DEFAULT '#',
+  placement ENUM('sidebar', 'inline', 'preroll') NOT NULL DEFAULT 'sidebar',
+  active TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ads_public_id (public_id),
+  KEY idx_ads_placement (placement, active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS upload_tickets (
@@ -134,3 +161,17 @@ CREATE TABLE IF NOT EXISTS upload_tickets (
   KEY idx_upload_user (user_id),
   CONSTRAINT fk_upload_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO genres (name, sort_order) VALUES
+  ('پاپ', 1),
+  ('رپ', 2),
+  ('سنتی', 3),
+  ('راک', 4),
+  ('الکترونیک', 5),
+  ('هیپ‌هاپ', 6),
+  ('امبینت', 7),
+  ('فیوژن', 8);
+
+INSERT IGNORE INTO ads (public_id, title, image_url, href, placement, active) VALUES
+  ('ad1', 'استودیو تولید صدای AI', '/images/ads/ad1.jpg', '#', 'sidebar', 1),
+  ('ad2', 'دوره پرامپت‌نویسی موسیقی AI', '/images/ads/ad2.jpg', '#', 'inline', 1);

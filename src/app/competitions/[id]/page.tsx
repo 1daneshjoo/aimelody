@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AuthLink } from "@/components/auth/AuthLink";
 import { TrackCard } from "@/components/track/TrackCard";
 import {
   formatNumber,
@@ -49,9 +49,9 @@ export default async function CompetitionDetailPage({ params }: Props) {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h2 className="section-title mb-0 text-xl">آثار شرکت‌کننده</h2>
           {competition.status === "active" && (
-            <Link href="/upload" className="btn btn-primary text-sm">
+            <AuthLink href="/upload" className="btn btn-primary text-sm">
               ارسال اثر به این مسابقه
-            </Link>
+            </AuthLink>
           )}
         </div>
 

@@ -20,9 +20,10 @@ export function TrackCard({
 }) {
   const src = coverThumbUrl(track.cover, COVER_THUMB_SIZE);
   const { playTrack, current, playing, toggle } = usePlayer();
-  const { isFavorite, toggleFavorite } = useLibrary();
+  const { isFavorite, toggleFavorite, favoriteCountDelta } = useLibrary();
   const active = current?.id === track.id;
   const fav = isFavorite(track.id);
+  const favoritesDisplay = Math.max(0, track.favorites + favoriteCountDelta(track.id));
 
   const onPlay = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -116,11 +117,11 @@ export function TrackCard({
         {!compact && (
           <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-xs text-muted">
             <span className="truncate">
-              امتیاز {track.ratings.overall.toFixed(1)} · {formatNumber(track.plays)} پخش
+              امتیاز {new Intl.NumberFormat("fa-IR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(track.ratings.overall)} · {formatNumber(track.plays)} پخش
             </span>
             <span className="inline-flex shrink-0 items-center gap-1">
               <Heart size={12} className={fav ? "text-accent" : undefined} />{" "}
-              {formatNumber(track.favorites + (fav ? 1 : 0))}
+              {formatNumber(favoritesDisplay)}
             </span>
           </div>
         )}

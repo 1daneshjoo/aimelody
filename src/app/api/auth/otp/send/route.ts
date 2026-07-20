@@ -45,7 +45,14 @@ export async function POST(req: Request) {
       { phone },
     );
     if (existing.length === 0) {
-      await execute(`INSERT INTO users (phone, role) VALUES (:phone, 'user')`, { phone });
+      const result = await execute(`INSERT INTO users (phone, role) VALUES (:phone, 'user')`, {
+        phone,
+      });
+      const newId = Number(result.insertId);
+      await execute(
+        `UPDATE users SET public_id = CONCAT('a', id) WHERE id = :id AND (public_id IS NULL OR public_id = '')`,
+        { id: newId },
+      );
     }
 
     // اگر خط ارسال تنظیم نشده، مستقیم حالت توسعه (بدون درخواست شبکه به IPPanel)
