@@ -23,7 +23,7 @@ export function LiveSearch({ compact = false }: { compact?: boolean }) {
   }, []);
 
   return (
-    <div ref={rootRef} className={compact ? "relative w-full" : "relative hidden sm:block"}>
+    <div ref={rootRef} className={compact ? "relative w-full" : "relative hidden md:block"}>
       <div className="flex items-center gap-2 rounded-full border border-line bg-bg-soft px-3 py-1.5">
         <Search size={15} className="shrink-0 text-muted" />
         <input

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -66,7 +67,9 @@ function UploadForm() {
         mediaType: form.type === "video" ? "video" : "audio",
         sizeBytes: mediaFile.size,
       });
-      await uploadToSignedUrl(mediaFile, mediaSigned, (p) => setProgress(Math.min(70, p * 0.7)));
+      const mediaUploaded = await uploadToSignedUrl(mediaFile, mediaSigned, (p) =>
+        setProgress(Math.min(65, p * 0.65)),
+      );
 
       const coverSigned = await requestSignedUpload({
         fileName: coverFile.name,
@@ -74,7 +77,38 @@ function UploadForm() {
         mediaType: "cover",
         sizeBytes: coverFile.size,
       });
-      await uploadToSignedUrl(coverFile, coverSigned, (p) => setProgress(70 + Math.round(p * 0.3)));
+      const coverUploaded = await uploadToSignedUrl(coverFile, coverSigned, (p) =>
+        setProgress(65 + Math.round(p * 0.25)),
+      );
+
+      setProgress(92);
+
+      const trackRes = await fetch("/api/tracks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          type: form.type,
+          genre: form.genre,
+          language: form.language,
+          lyricist: form.lyricist,
+          composer: form.composer,
+          vocalOwner: form.vocalOwner,
+          vocalSource: form.vocalSource,
+          lyrics: form.lyrics,
+          aiTools: form.aiTools,
+          prompt: form.prompt,
+          description: form.description,
+          competitionId: form.competitionId || null,
+          mediaUrl: mediaUploaded.publicUrl,
+          coverUrl: coverUploaded.publicUrl,
+          mediaStoragePath: mediaUploaded.storagePath,
+        }),
+      });
+      const trackData = (await trackRes.json()) as { ok: boolean; error?: string };
+      if (!trackRes.ok || !trackData.ok) {
+        throw new Error(trackData.error || "ثبت اثر در دیتابیس ناموفق بود");
+      }
 
       setProgress(100);
       setDone(true);
@@ -87,6 +121,23 @@ function UploadForm() {
 
   const vocalSourceLabel =
     vocalSources.find((v) => v.value === form.vocalSource)?.label ?? form.vocalSource;
+
+  const canGoNext = (currentStep: number) => {
+    switch (currentStep) {
+      case 0:
+        return Boolean(form.title.trim());
+      case 1:
+        return Boolean(mediaFile && coverFile);
+      case 2:
+        return Boolean(
+          form.lyricist.trim() &&
+            form.vocalOwner.trim() &&
+            form.rightsConfirm,
+        );
+      default:
+        return true;
+    }
+  };
 
   if (authLoading) {
     return (
@@ -116,26 +167,28 @@ function UploadForm() {
         فایل‌ها به‌صورت امن آپلود می‌شوند و پس از بررسی در سایت نمایش داده خواهند شد.
       </p>
 
-      <div className="mb-8 flex gap-2 overflow-x-auto pb-1">
-        {steps.map((label, i) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => !uploading && setStep(i)}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap",
-              step === i
-                ? "border-accent bg-accent-soft text-accent"
-                : "border-line text-muted",
-            )}
-          >
-            {i + 1}. {label}
-          </button>
-        ))}
-      </div>
+      {!done && (
+        <div className="mb-8 flex gap-2 overflow-x-auto pb-1">
+          {steps.map((label, i) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => !uploading && setStep(i)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-sm whitespace-nowrap",
+                step === i
+                  ? "border-accent bg-accent-soft text-accent"
+                  : "border-line text-muted",
+              )}
+            >
+              {i + 1}. {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="surface p-5 md:p-7">
-        {step === 0 && (
+        {!done && step === 0 && (
           <div className="space-y-4">
             <Field label="عنوان اثر *">
               <input
@@ -193,7 +246,7 @@ function UploadForm() {
           </div>
         )}
 
-        {step === 1 && (
+        {!done && step === 1 && (
           <div className="space-y-4">
             <Field label="آپلود فایل اصلی *">
               <input
@@ -239,7 +292,7 @@ function UploadForm() {
           </div>
         )}
 
-        {step === 2 && (
+        {!done && step === 2 && (
           <div className="space-y-4">
             <Field label="شاعر / ترانه‌سرا *">
               <input
@@ -293,7 +346,7 @@ function UploadForm() {
           </div>
         )}
 
-        {step === 3 && (
+        {!done && step === 3 && (
           <div className="space-y-4">
             <Field label="متن ترانه / Lyrics">
               <textarea
@@ -343,7 +396,7 @@ function UploadForm() {
           </div>
         )}
 
-        {step === 4 && (
+        {!done && step === 4 && (
           <div className="space-y-3 text-sm">
             <Row label="عنوان" value={form.title || "—"} />
             <Row label="نوع" value={form.type === "audio" ? "صوتی" : "ویدئویی"} />
@@ -356,10 +409,10 @@ function UploadForm() {
             <Row label="منبع صدا" value={vocalSourceLabel} />
             <Row label="تأیید حقوق" value={form.rightsConfirm ? "بله" : "خیر"} />
 
-            {(uploading || progress > 0) && !done && (
+            {(uploading || progress > 0) && (
               <div className="pt-2">
                 <div className="mb-2 flex justify-between text-sm">
-                  <span>پیشرفت آپلود</span>
+                  <span>پیشرفت ارسال</span>
                   <span>{progress}٪</span>
                 </div>
                 <div className="progress-bar">
@@ -370,51 +423,71 @@ function UploadForm() {
 
             {error && <p className="rounded-xl bg-danger/15 p-4 text-danger">{error}</p>}
 
-            {done ? (
-              <p className="rounded-xl bg-success/15 p-4 text-success">
-                اثر با موفقیت ارسال شد و در صف بررسی قرار گرفت.
-              </p>
-            ) : (
+            <button
+              type="button"
+              className="btn btn-primary mt-4"
+              disabled={
+                uploading ||
+                !form.title ||
+                !form.lyricist ||
+                !form.vocalOwner ||
+                !form.rightsConfirm ||
+                !mediaFile ||
+                !coverFile
+              }
+              onClick={() => void submitUpload()}
+            >
+              {uploading ? "در حال ارسال..." : "ارسال نهایی"}
+            </button>
+          </div>
+        )}
+
+        {done && (
+          <div className="space-y-4 text-sm">
+            <p className="rounded-xl bg-success/15 p-4 text-success">
+              اثر با موفقیت ارسال شد و در صف بررسی قرار گرفت.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/dashboard" className="btn btn-primary">
+                مشاهده آثار من
+              </Link>
               <button
                 type="button"
-                className="btn btn-primary mt-4"
-                disabled={
-                  uploading ||
-                  !form.title ||
-                  !form.lyricist ||
-                  !form.vocalOwner ||
-                  !form.rightsConfirm ||
-                  !mediaFile ||
-                  !coverFile
-                }
-                onClick={() => void submitUpload()}
+                className="btn btn-ghost"
+                onClick={() => router.push("/upload")}
               >
-                {uploading ? "در حال ارسال..." : "ارسال نهایی"}
+                ارسال اثر جدید
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!done && (
+          <div className="mt-8 flex justify-between gap-3 border-t border-line pt-5">
+            {step > 0 ? (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                disabled={uploading}
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+              >
+                قبلی
+              </button>
+            ) : (
+              <span />
+            )}
+            {step < steps.length - 1 && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={uploading || !canGoNext(step)}
+                onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
+              >
+                مرحله بعد
               </button>
             )}
           </div>
         )}
-
-        <div className="mt-8 flex justify-between gap-3 border-t border-line pt-5">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={step === 0 || uploading}
-            onClick={() => setStep((s) => Math.max(0, s - 1))}
-          >
-            قبلی
-          </button>
-          {step < steps.length - 1 && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={uploading}
-              onClick={() => setStep((s) => Math.min(steps.length - 1, s + 1))}
-            >
-              مرحله بعد
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

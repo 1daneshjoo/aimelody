@@ -6,7 +6,7 @@ import { TrackCard } from "@/components/track/TrackCard";
 import { TrackGridSkeleton } from "@/components/track/TrackCardSkeleton";
 import { ads, genres, getApprovedTracks, sortTracks } from "@/data/mock";
 import { coverThumbUrl } from "@/lib/media";
-import type { ChartPeriod, ChartSort, MediaType } from "@/types";
+import type { ChartPeriod, ChartSort, MediaType, Track } from "@/types";
 import { cn } from "@/lib/utils";
 
 const periods: { id: ChartPeriod; label: string }[] = [
@@ -33,6 +33,7 @@ function ExploreInner() {
   const [type, setType] = useState<"all" | MediaType>("all");
   const [q, setQ] = useState("");
   const [booting, setBooting] = useState(true);
+  const [dbTracks, setDbTracks] = useState<Track[]>([]);
 
   useEffect(() => {
     const qParam = searchParams.get("q");
@@ -43,8 +44,25 @@ function ExploreInner() {
     return () => clearTimeout(t);
   }, [searchParams]);
 
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/archive")
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; tracks?: Track[] }) => {
+        if (!cancelled && data.ok && data.tracks) setDbTracks(data.tracks);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const list = useMemo(() => {
-    let items = getApprovedTracks();
+    const mock = getApprovedTracks();
+    const byId = new Map<string, Track>();
+    for (const t of mock) byId.set(t.id, t);
+    for (const t of dbTracks) byId.set(t.id, t);
+    let items = [...byId.values()];
     if (genre !== "همه") items = items.filter((t) => t.genre === genre);
     if (type !== "all") items = items.filter((t) => t.type === type);
     if (q.trim()) {
@@ -55,12 +73,12 @@ function ExploreInner() {
     }
     void period;
     return sortTracks(items, sort);
-  }, [genre, type, q, sort, period]);
+  }, [genre, type, q, sort, period, dbTracks]);
 
   return (
     <div className="container-page py-10">
-      <h1 className="section-title">اکتشاف و چارت‌ها</h1>
-      <p className="section-sub">فیلتر زمانی، ژانر و مرتب‌سازی تخصصی روی آرشیو آثار</p>
+      <h1 className="section-title">آرشیو</h1>
+      <p className="section-sub">فیلتر زمانی، ژانر و مرتب‌سازی تخصصی روی آثار منتشرشده</p>
 
       <div className="mb-6 flex flex-wrap gap-2">
         {periods.map((p) => (

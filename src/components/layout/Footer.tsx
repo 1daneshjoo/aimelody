@@ -16,7 +16,7 @@ export function Footer() {
           <p className="mb-3 text-sm font-bold">کاوش</p>
           <ul className="space-y-2 text-sm text-muted">
             <li>
-              <Link href="/explore">چارت‌ها</Link>
+              <Link href="/explore">آرشیو</Link>
             </li>
             <li>
               <Link href="/competitions">مسابقات</Link>

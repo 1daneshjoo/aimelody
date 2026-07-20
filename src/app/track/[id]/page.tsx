@@ -13,18 +13,19 @@ import {
   getTrackById,
   vocalSourceLabel,
 } from "@/data/mock";
+import { getTrackByPublicId } from "@/lib/tracks-server";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const track = getTrackById(id);
+  const track = (await getTrackByPublicId(id)) ?? getTrackById(id);
   return { title: track?.title ?? "اثر یافت نشد" };
 }
 
 export default async function TrackPage({ params }: Props) {
   const { id } = await params;
-  const track = getTrackById(id);
+  const track = (await getTrackByPublicId(id)) ?? getTrackById(id);
   if (!track || track.status !== "approved") notFound();
 
   const trackComments = getCommentsByTrack(track.id);

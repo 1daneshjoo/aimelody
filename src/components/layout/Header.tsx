@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/", label: "خانه" },
-  { href: "/explore", label: "اکتشاف و چارت" },
+  { href: "/explore", label: "آرشیو" },
   { href: "/competitions", label: "مسابقات" },
   { href: "/upload", label: "آپلود اثر" },
 ];
@@ -29,7 +29,7 @@ export function Header() {
           <span className="text-muted text-sm font-normal">.ir</span>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav className="hidden items-center gap-1 xl:flex">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -82,7 +82,7 @@ export function Header() {
 
           <button
             type="button"
-            className="btn btn-ghost !px-3 lg:hidden"
+            className="btn btn-ghost !px-3 xl:hidden"
             onClick={() => setOpen((v) => !v)}
             aria-label="منو"
           >
@@ -92,7 +92,7 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-line lg:hidden">
+        <div className="border-t border-line xl:hidden">
           <div className="container-page space-y-3 py-3">
             <LiveSearch compact />
             <nav className="flex flex-col gap-1">

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
+import { Heart, Music2 } from "lucide-react";
 import { displayName, useAuth } from "@/components/auth/AuthProvider";
 import { useLibrary } from "@/components/library/LibraryProvider";
 import { getTrackById, getAllArtists } from "@/data/mock";
-import { cn } from "@/lib/utils";
+import type { MyTrack } from "@/lib/tracks";
+import { cn, statusLabel } from "@/lib/utils";
 
 const tabs = [
   { id: "profile", label: "پروفایل" },
@@ -20,6 +21,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("works");
+  const [myTracks, setMyTracks] = useState<MyTrack[]>([]);
+  const [tracksLoading, setTracksLoading] = useState(true);
   const { favoriteIds, followingIds, toggleFavorite } = useLibrary();
   const favorites = favoriteIds.map((id) => getTrackById(id)).filter(Boolean);
   const following = getAllArtists().filter((a) => followingIds.includes(a.id));
@@ -27,6 +30,27 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!loading && !user) router.replace("/login");
   }, [loading, user, router]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    setTracksLoading(true);
+    fetch("/api/tracks", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data: { ok: boolean; tracks?: MyTrack[] }) => {
+        if (!active) return;
+        setMyTracks(data.ok && data.tracks ? data.tracks : []);
+      })
+      .catch(() => {
+        if (active) setMyTracks([]);
+      })
+      .finally(() => {
+        if (active) setTracksLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -109,9 +133,41 @@ export default function DashboardPage() {
       )}
 
       {tab === "works" && (
-        <p className="text-sm text-muted">
-          هنوز اثری از این حساب ثبت نشده. از دکمه «اثر جدید» برای آپلود استفاده کنید.
-        </p>
+        <div className="space-y-3">
+          {tracksLoading && <p className="text-sm text-muted">در حال بارگذاری آثار...</p>}
+          {!tracksLoading && myTracks.length === 0 && (
+            <p className="text-sm text-muted">
+              هنوز اثری ثبت نشده. از دکمه «اثر جدید» برای آپلود استفاده کنید.
+            </p>
+          )}
+          {myTracks.map((t) => (
+            <div key={t.id} className="surface flex flex-wrap items-center gap-4 p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={t.cover} alt="" className="size-16 rounded-xl object-cover" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold">{t.title}</p>
+                <p className="text-sm text-muted">
+                  {t.genre} · {t.type === "audio" ? "صوتی" : "ویدئویی"} · {t.createdAt}
+                </p>
+              </div>
+              <span
+                className={cn(
+                  "badge",
+                  t.status === "approved" && "text-success",
+                  t.status === "rejected" && "text-danger",
+                )}
+              >
+                <Music2 size={12} />
+                {statusLabel(t.status)}
+              </span>
+              {t.status === "approved" && (
+                <Link href={`/track/${t.id}`} className="text-sm text-accent">
+                  مشاهده
+                </Link>
+              )}
+            </div>
+          ))}
+        </div>
       )}
 
       {tab === "favorites" && (

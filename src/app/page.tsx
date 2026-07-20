@@ -46,7 +46,7 @@ export default function HomePage() {
           </p>
           <div className="fade-up-delay-2 mt-8 flex flex-wrap gap-3">
             <Link href="/explore" className="btn btn-primary">
-              ورود به چارت‌ها
+              ورود به آرشیو
             </Link>
             <Link href="/upload" className="btn btn-ghost border-white/20 bg-black/25 text-white">
               ارسال اثر

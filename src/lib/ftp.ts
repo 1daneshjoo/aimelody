@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { Readable } from "stream";
+import CpanelFormData from "form-data";
+import { Agent, fetch as undiciFetch } from "undici";
 import { Client } from "basic-ftp";
 
 function stripQuotes(value: string | undefined) {
@@ -18,6 +20,22 @@ function stripQuotes(value: string | undefined) {
 function basicAuth(user: string, password: string) {
   return `Basic ${Buffer.from(`${user}:${password}`).toString("base64")}`;
 }
+
+/** کش ساخت فولدر در طول عمر پروسس — کمتر درخواست به سی‌پنل */
+const ensuredDirCache = new Set<string>();
+
+function cpanelTlsInsecure() {
+  return process.env.DL_CPANEL_TLS_INSECURE !== "false";
+}
+
+const cpanelAgent = new Agent({
+  connect: {
+    rejectUnauthorized: !cpanelTlsInsecure(),
+    timeout: 120_000,
+  },
+  headersTimeout: 180_000,
+  bodyTimeout: 180_000,
+});
 
 export function isDlCpanelConfigured() {
   return Boolean(
@@ -40,28 +58,84 @@ export function isDlFtpConfigured() {
   );
 }
 
-async function cpanelMkdir(parentPath: string, name: string) {
-  const base = process.env.DL_CPANEL_BASE_URL!.replace(/\/+$/, "");
+/** لیست آدرس‌های سی‌پنل: اول IP (پایدار)، بعد دامنه */
+function cpanelBases(): string[] {
+  const configured = (process.env.DL_CPANEL_BASE_URL || "").replace(/\/+$/, "");
+  const ip = (process.env.DL_CPANEL_IP || "158.58.190.44").trim();
+  const port = (process.env.DL_CPANEL_PORT || "2083").trim();
+  const byIp = `https://${ip}:${port}`;
+  const list = [configured, byIp].filter(Boolean);
+  return [...new Set(list)];
+}
+
+function explainNetworkError(e: unknown): string {
+  const err = e as { message?: string; cause?: { code?: string; message?: string; hostname?: string } };
+  const code = err.cause?.code || "";
+  const hostname = err.cause?.hostname || "";
+  if (code === "ENOTFOUND") {
+    return `DNS دامنه سی‌پنل پیدا نشد (${hostname || "hostname"}). از IP در DL_CPANEL_BASE_URL استفاده کنید.`;
+  }
+  if (code === "ETIMEDOUT" || code === "ECONNREFUSED") {
+    return `اتصال به سی‌پنل برقرار نشد (${code}). VPN یا فایروال را بررسی کنید.`;
+  }
+  return err.cause?.message || err.message || "خطای شبکه سی‌پنل";
+}
+
+async function cpanelFetch(
+  pathAndQuery: string,
+  init: { method?: string; headers?: Record<string, string>; body?: BodyInit },
+) {
   const user = process.env.DL_CPANEL_USER!.trim();
   const password = stripQuotes(process.env.DL_CPANEL_PASSWORD);
-  const url = new URL(`${base}/json-api/cpanel`);
-  url.searchParams.set("cpanel_jsonapi_user", user);
-  url.searchParams.set("cpanel_jsonapi_apiversion", "2");
-  url.searchParams.set("cpanel_jsonapi_module", "Fileman");
-  url.searchParams.set("cpanel_jsonapi_func", "mkdir");
-  url.searchParams.set("path", parentPath);
-  url.searchParams.set("name", name);
-  url.searchParams.set("permissions", "0755");
+  const headers = {
+    ...(init.headers || {}),
+    Authorization: basicAuth(user, password),
+  };
 
-  const res = await fetch(url, {
-    headers: { Authorization: basicAuth(user, password) },
-    cache: "no-store",
+  let lastError: unknown;
+  for (const base of cpanelBases()) {
+    const url = `${base}${pathAndQuery.startsWith("/") ? "" : "/"}${pathAndQuery}`;
+    try {
+      const res = await undiciFetch(url, {
+        method: init.method || "GET",
+        headers,
+        body: init.body as import("undici").BodyInit | undefined,
+        dispatcher: cpanelAgent,
+      });
+      const text = await res.text();
+      return { res, text, base };
+    } catch (e) {
+      lastError = e;
+      console.warn("[cpanelFetch] failed via", base, explainNetworkError(e));
+    }
+  }
+  throw new Error(explainNetworkError(lastError));
+}
+
+async function cpanelMkdir(parentPath: string, name: string) {
+  const key = `${parentPath}/${name}`;
+  if (ensuredDirCache.has(key)) return;
+
+  const qs = new URLSearchParams({
+    cpanel_jsonapi_user: process.env.DL_CPANEL_USER!.trim(),
+    cpanel_jsonapi_apiversion: "2",
+    cpanel_jsonapi_module: "Fileman",
+    cpanel_jsonapi_func: "mkdir",
+    path: parentPath,
+    name,
+    permissions: "0755",
   });
-  const text = await res.text();
-  // اگر فولدر از قبل باشد، سی‌پنل معمولاً باز هم 200 می‌دهد یا خطای قابل چشم‌پوشی
-  if (!res.ok) {
+
+  const { res, text } = await cpanelFetch(`/json-api/cpanel?${qs.toString()}`, {
+    method: "GET",
+  });
+
+  // فولدر از قبل باشد هم OK
+  const exists = /File exists|already exists/i.test(text);
+  if (!res.ok && !exists) {
     throw new Error(`cPanel mkdir HTTP ${res.status}: ${text.slice(0, 200)}`);
   }
+  ensuredDirCache.add(key);
 }
 
 async function ensureCpanelDirs(relativeDir: string) {
@@ -81,11 +155,7 @@ export async function uploadViaCpanel(storagePath: string, bytes: Buffer, conten
     throw new Error("سی‌پنل پیکربندی نشده است");
   }
 
-  const base = process.env.DL_CPANEL_BASE_URL!.replace(/\/+$/, "");
-  const user = process.env.DL_CPANEL_USER!.trim();
-  const password = stripQuotes(process.env.DL_CPANEL_PASSWORD);
   const docroot = process.env.DL_CPANEL_DOCROOT!.replace(/\/+$/, "");
-
   const normalized = storagePath.replace(/\\/g, "/").replace(/^\/+/, "");
   const remoteDir = path.posix.dirname(normalized);
   const remoteFile = path.posix.basename(normalized);
@@ -94,37 +164,56 @@ export async function uploadViaCpanel(storagePath: string, bytes: Buffer, conten
     await ensureCpanelDirs(remoteDir);
   }
 
-  const form = new FormData();
-  form.set("dir", remoteDir && remoteDir !== "." ? `${docroot}/${remoteDir}` : docroot);
-  form.set(
-    "file-1",
-    new Blob([Uint8Array.from(bytes)], {
-      type: contentType || "application/octet-stream",
-    }),
-    remoteFile,
+  const targetDir =
+    remoteDir && remoteDir !== "." ? `${docroot}/${remoteDir}` : docroot;
+
+  const user = process.env.DL_CPANEL_USER!.trim();
+  const password = stripQuotes(process.env.DL_CPANEL_PASSWORD);
+
+  let lastError: unknown;
+  for (const base of cpanelBases()) {
+    const form = new CpanelFormData();
+    form.append("dir", targetDir);
+    form.append("file-1", bytes, {
+      filename: remoteFile,
+      contentType: contentType || "application/octet-stream",
+    });
+
+    const url = `${base}/execute/Fileman/upload_files`;
+    try {
+      const res = await undiciFetch(url, {
+        method: "POST",
+        headers: {
+          ...form.getHeaders(),
+          Authorization: basicAuth(user, password),
+        },
+        body: form as unknown as import("undici").BodyInit,
+        dispatcher: cpanelAgent,
+      });
+      const text = await res.text();
+
+      let raw: { status?: number; errors?: string[] | null; data?: { succeeded?: number } } = {};
+      try {
+        raw = JSON.parse(text) as typeof raw;
+      } catch {
+        throw new Error(`cPanel upload پاسخ نامعتبر: ${text.slice(0, 200)}`);
+      }
+
+      if (!res.ok || raw.status !== 1 || !raw.data?.succeeded) {
+        const err = raw.errors?.join("; ") || `HTTP ${res.status}`;
+        throw new Error(`آپلود سی‌پنل ناموفق: ${err}`);
+      }
+
+      return normalized;
+    } catch (e) {
+      lastError = e;
+      console.warn("[uploadViaCpanel] failed via", base, e instanceof Error ? e.message : e);
+    }
+  }
+
+  throw new Error(
+    lastError instanceof Error ? lastError.message : explainNetworkError(lastError),
   );
-
-  const res = await fetch(`${base}/execute/Fileman/upload_files`, {
-    method: "POST",
-    headers: { Authorization: basicAuth(user, password) },
-    body: form,
-    cache: "no-store",
-  });
-
-  const text = await res.text();
-  let raw: { status?: number; errors?: string[] | null; data?: { succeeded?: number } } = {};
-  try {
-    raw = JSON.parse(text) as typeof raw;
-  } catch {
-    throw new Error(`cPanel upload پاسخ نامعتبر: ${text.slice(0, 200)}`);
-  }
-
-  if (!res.ok || raw.status !== 1 || !raw.data?.succeeded) {
-    const err = raw.errors?.join("; ") || `HTTP ${res.status}`;
-    throw new Error(`آپلود سی‌پنل ناموفق: ${err}`);
-  }
-
-  return normalized;
 }
 
 export async function uploadViaHttp(storagePath: string, bytes: Buffer, contentType?: string) {
@@ -134,12 +223,14 @@ export async function uploadViaHttp(storagePath: string, bytes: Buffer, contentT
     throw new Error("آپلود HTTP پیکربندی نشده است");
   }
 
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
   const form = new FormData();
   form.set("secret", secret);
   form.set("path", storagePath.replace(/\\/g, "/"));
   form.set(
     "file",
-    new Blob([Uint8Array.from(bytes)], { type: contentType || "application/octet-stream" }),
+    new Blob([copy], { type: contentType || "application/octet-stream" }),
     path.posix.basename(storagePath),
   );
 

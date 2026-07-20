@@ -12,7 +12,7 @@ export function MobileNav() {
 
   const items = [
     { href: "/", label: "خانه", icon: Home },
-    { href: "/explore", label: "اکتشاف", icon: Compass },
+    { href: "/explore", label: "آرشیو", icon: Compass },
     { href: "/upload", label: "آپلود", icon: Upload },
     { href: "/competitions", label: "مسابقه", icon: Trophy },
     user || loading

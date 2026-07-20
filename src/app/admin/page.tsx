@@ -8,8 +8,8 @@ import {
   ads,
   competitions,
   formatNumber,
-  tracks,
 } from "@/data/mock";
+import type { AdminTrack } from "@/lib/tracks";
 import { cn, statusLabel } from "@/lib/utils";
 
 const tabs = [
@@ -23,9 +23,9 @@ export default function AdminPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [tab, setTab] = useState<(typeof tabs)[number]["id"]>("tracks");
-  const [statuses, setStatuses] = useState<Record<string, string>>(
-    Object.fromEntries(tracks.map((t) => [t.id, t.status])),
-  );
+  const [tracks, setTracks] = useState<AdminTrack[]>([]);
+  const [tracksLoading, setTracksLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (loading) return;
@@ -38,10 +38,46 @@ export default function AdminPage() {
     }
   }, [loading, user, router]);
 
+  useEffect(() => {
+    if (!user || user.role !== "admin") return;
+    let cancelled = false;
+    setTracksLoading(true);
+    fetch("/api/admin/tracks")
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; tracks?: AdminTrack[] }) => {
+        if (!cancelled && data.ok && data.tracks) setTracks(data.tracks);
+      })
+      .finally(() => {
+        if (!cancelled) setTracksLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
   const pendingCount = useMemo(
-    () => Object.values(statuses).filter((s) => s === "pending").length,
-    [statuses],
+    () => tracks.filter((t) => t.status === "pending").length,
+    [tracks],
   );
+
+  async function updateTrackStatus(id: string, status: "approved" | "rejected") {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`/api/admin/tracks/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = (await res.json()) as { ok?: boolean };
+      if (data.ok) {
+        setTracks((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, status } : t)),
+        );
+      }
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (loading || !user || user.role !== "admin") {
     return (
@@ -86,6 +122,12 @@ export default function AdminPage() {
 
       {tab === "tracks" && (
         <div className="space-y-3">
+          {tracksLoading && (
+            <p className="text-sm text-muted">در حال بارگذاری آثار...</p>
+          )}
+          {!tracksLoading && tracks.length === 0 && (
+            <p className="text-sm text-muted">هنوز اثری ثبت نشده است.</p>
+          )}
           {tracks.map((t) => (
             <div key={t.id} className="surface flex flex-wrap items-center gap-4 p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -93,22 +135,24 @@ export default function AdminPage() {
               <div className="min-w-0 flex-1">
                 <p className="font-bold">{t.title}</p>
                 <p className="text-sm text-muted">
-                  {t.artist.name} · {t.type === "audio" ? "صوت" : "ویدئو"} · {t.createdAt}
+                  {t.artistName} · {t.type === "audio" ? "صوت" : "ویدئو"} · {t.createdAt}
                 </p>
               </div>
-              <span className="badge">{statusLabel(statuses[t.id])}</span>
+              <span className="badge">{statusLabel(t.status)}</span>
               <div className="flex gap-2">
                 <button
                   type="button"
                   className="btn btn-ghost !py-1.5 text-xs text-success"
-                  onClick={() => setStatuses((s) => ({ ...s, [t.id]: "approved" }))}
+                  disabled={updatingId === t.id}
+                  onClick={() => updateTrackStatus(t.id, "approved")}
                 >
                   تایید
                 </button>
                 <button
                   type="button"
                   className="btn btn-ghost !py-1.5 text-xs text-danger"
-                  onClick={() => setStatuses((s) => ({ ...s, [t.id]: "rejected" }))}
+                  disabled={updatingId === t.id}
+                  onClick={() => updateTrackStatus(t.id, "rejected")}
                 >
                   رد
                 </button>
