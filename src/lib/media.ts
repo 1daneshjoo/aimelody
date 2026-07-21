@@ -60,3 +60,41 @@ export function coverThumbUrl(url: string, _size = COVER_THUMB_SIZE) {
 export function avatarThumbUrl(url: string, _size = 160) {
   return url;
 }
+
+/** پسوند فایل از URL مدیا */
+export function mediaExtension(
+  mediaUrl: string,
+  type: "audio" | "video" = "audio",
+) {
+  try {
+    const path = new URL(mediaUrl).pathname;
+    const match = path.match(/\.([a-z0-9]{2,5})$/i);
+    if (match) return match[1].toLowerCase();
+  } catch {
+    // ignore invalid URL
+  }
+  return type === "video" ? "mp4" : "mp3";
+}
+
+/** نام امن فایل برای دانلود (با پسوند) */
+export function downloadFileName(
+  title: string,
+  mediaUrl: string,
+  type: "audio" | "video" = "audio",
+) {
+  const ext = mediaExtension(mediaUrl, type);
+  const base =
+    sanitizeFileName(title).replace(/\.[a-z0-9]{2,5}$/i, "") || "aimelody-track";
+  return `${base}.${ext}`;
+}
+
+/** فقط URLهای CDN خودمان قابل پروکسی دانلود هستند */
+export function isAllowedDlUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const base = new URL(DL_BASE);
+    return parsed.origin === base.origin;
+  } catch {
+    return false;
+  }
+}

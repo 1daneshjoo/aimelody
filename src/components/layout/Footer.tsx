@@ -46,7 +46,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-line py-4 text-center text-xs text-muted">
-        © ۱۴۰۵ AiMelody.ir — نسخه دمو با داده آزمایشی
+        © ۱۴۰۵ AiMelody.ir
       </div>
     </footer>
   );

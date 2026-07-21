@@ -12,6 +12,7 @@ import {
 import { useMemo } from "react";
 import type { Track } from "@/types";
 import { formatPlayerTime, usePlayer } from "@/components/player/PlayerProvider";
+import { DownloadTrackButton } from "@/components/track/DownloadTrackButton";
 import { cn } from "@/lib/utils";
 
 function Waveform({ active, progress }: { active: boolean; progress: number }) {
@@ -167,25 +168,28 @@ export function AudioPlayer({ track }: { track: Track }) {
                 </button>
               </div>
 
-              <div className="flex min-w-[9rem] max-w-[14rem] flex-1 items-center gap-2" dir="ltr">
-                <button
-                  type="button"
-                  className={cn("btn btn-ghost !px-2 !py-2", muted && "text-accent")}
-                  onClick={toggleMute}
-                  aria-label={muted ? "صدا روشن" : "بی‌صدا"}
-                >
-                  {muted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
-                </button>
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={muted ? 0 : volume}
-                  onChange={(e) => setVolume(Number(e.target.value))}
-                  className="player-volume flex-1"
-                  aria-label="میزان صدا"
-                />
+              <div className="flex flex-wrap items-center gap-2">
+                <DownloadTrackButton track={track} />
+                <div className="flex min-w-[9rem] max-w-[14rem] flex-1 items-center gap-2" dir="ltr">
+                  <button
+                    type="button"
+                    className={cn("btn btn-ghost !px-2 !py-2", muted && "text-accent")}
+                    onClick={toggleMute}
+                    aria-label={muted ? "صدا روشن" : "بی‌صدا"}
+                  >
+                    {muted || volume === 0 ? <VolumeX size={18} /> : <Volume2 size={18} />}
+                  </button>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={muted ? 0 : volume}
+                    onChange={(e) => setVolume(Number(e.target.value))}
+                    className="player-volume flex-1"
+                    aria-label="میزان صدا"
+                  />
+                </div>
               </div>
             </div>
           </div>

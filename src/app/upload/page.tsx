@@ -68,7 +68,7 @@ function UploadForm() {
         sizeBytes: mediaFile.size,
       });
       const mediaUploaded = await uploadToSignedUrl(mediaFile, mediaSigned, (p) =>
-        setProgress(Math.min(65, p * 0.65)),
+        setProgress(Math.round(Math.min(65, p * 0.65))),
       );
 
       const coverSigned = await requestSignedUpload({
@@ -275,7 +275,7 @@ function UploadForm() {
               <div>
                 <div className="mb-2 flex justify-between text-sm">
                   <span>پیشرفت آپلود</span>
-                  <span>{progress}٪</span>
+                  <span>{Math.round(progress)}٪</span>
                 </div>
                 <div className="progress-bar">
                   <span style={{ width: `${progress}%` }} />
@@ -406,7 +406,7 @@ function UploadForm() {
               <div className="pt-2">
                 <div className="mb-2 flex justify-between text-sm">
                   <span>پیشرفت ارسال</span>
-                  <span>{progress}٪</span>
+                  <span>{Math.round(progress)}٪</span>
                 </div>
                 <div className="progress-bar">
                   <span style={{ width: `${progress}%` }} />
