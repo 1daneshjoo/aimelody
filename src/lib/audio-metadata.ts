@@ -130,9 +130,9 @@ export async function embedAudioMetadata(input: AudioEmbedInput): Promise<boolea
         ? { language: "eng", text: input.lyrics.trim() }
         : undefined,
       userDefinedText: [
-        { description: "SITE", text: siteUrl },
-        { description: "TRACK_URL", text: trackUrl },
-        { description: "PLATFORM", text: "AiMelody.ir" },
+        { description: "SITE", value: siteUrl },
+        { description: "TRACK_URL", value: trackUrl },
+        { description: "PLATFORM", value: "AiMelody.ir" },
       ],
       copyright: `© ${new Date().getFullYear()} AiMelody.ir`,
     };
