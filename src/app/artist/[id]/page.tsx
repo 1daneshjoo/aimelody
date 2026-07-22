@@ -69,20 +69,22 @@ function ArtistView({
 
   return (
     <div className="container-page py-10">
-      <div className="surface mb-8 flex flex-wrap items-center gap-5 p-5 md:p-7">
+      <div className="surface mb-8 flex flex-col items-center gap-4 p-5 text-center md:flex-row md:items-center md:gap-5 md:p-7 md:text-start">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={artist.avatar}
           alt={artist.name}
-          className="size-24 rounded-full object-cover ring-2 ring-accent/30 md:size-28"
+          className="size-20 shrink-0 rounded-full object-cover ring-2 ring-accent/30 md:size-28"
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 w-full flex-1">
           <p className="text-sm text-muted">پروفایل سازنده</p>
           <h1 className="text-2xl font-bold md:text-3xl">{artist.name}</h1>
-          {artist.bio && <p className="mt-2 max-w-xl text-muted">{artist.bio}</p>}
-          <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted">
+          {artist.bio && (
+            <p className="mx-auto mt-2 max-w-xl text-muted md:mx-0">{artist.bio}</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-muted md:justify-start">
             <span>{formatNumber(works.length)} اثر</span>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>
               میانگین{" "}
               {new Intl.NumberFormat("fa-IR", {
@@ -90,11 +92,14 @@ function ArtistView({
                 maximumFractionDigits: 1,
               }).format(avg)}
             </span>
-            <span>·</span>
+            <span aria-hidden>·</span>
             <span>{formatNumber(plays)} پخش</span>
           </div>
         </div>
-        <ArtistActions artistId={artist.id} />
+        <ArtistActions
+          artistId={artist.id}
+          className="w-full justify-center md:w-auto md:shrink-0"
+        />
       </div>
 
       <div className="mb-4 flex items-end justify-between gap-3">

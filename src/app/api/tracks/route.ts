@@ -4,6 +4,7 @@ import type { RowDataPacket } from "mysql2";
 import { readSession } from "@/lib/auth";
 import { execute, formatDbError, query } from "@/lib/db";
 import { createTrackPublicId, mapTrackRow, type TrackRow } from "@/lib/tracks";
+import { embedAudioMetadata } from "@/lib/audio-metadata";
 
 export const runtime = "nodejs";
 
@@ -143,6 +144,24 @@ export async function POST(req: NextRequest) {
     const row = rows[0];
     if (!row) {
       return NextResponse.json({ ok: false, error: "ثبت اثر ناموفق بود" }, { status: 500 });
+    }
+
+    if (type === "audio") {
+      const artistName = session.name?.trim() || session.phone;
+      void embedAudioMetadata({
+        title,
+        artistName,
+        genre: (body.genre || "").trim() || null,
+        language: (body.language || "").trim() || null,
+        lyricist,
+        lyrics: (body.lyrics || "").trim() || null,
+        aiTools: (body.aiTools || "").trim() || null,
+        description: (body.description || "").trim() || null,
+        trackPublicId: publicId,
+        mediaUrl,
+        coverUrl,
+        storagePath: (body.mediaStoragePath || "").trim() || null,
+      }).catch((e) => console.warn("[tracks/POST] embed metadata", e));
     }
 
     return NextResponse.json({

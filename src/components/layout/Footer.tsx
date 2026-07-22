@@ -4,8 +4,8 @@ import { AuthLink } from "@/components/auth/AuthLink";
 export function Footer() {
   return (
     <footer className="mt-auto border-t border-line bg-bg-soft/60">
-      <div className="container-page grid gap-8 py-12 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div>
+      <div className="container-page grid grid-cols-2 gap-x-6 gap-y-8 py-12 md:grid-cols-[1.4fr_1fr_1fr] md:gap-8">
+        <div className="col-span-2 md:col-span-1">
           <p className="font-display text-2xl font-bold">
             Ai<span className="text-accent">Melody</span>
           </p>

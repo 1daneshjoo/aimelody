@@ -6,6 +6,7 @@ import { ArtistActions } from "@/components/artist/ArtistActions";
 import { AudioPlayer } from "@/components/track/AudioPlayer";
 import { Comments } from "@/components/track/Comments";
 import { RatingForm } from "@/components/track/RatingForm";
+import { TrackFileDetails } from "@/components/track/TrackFileDetails";
 import { TrackStats } from "@/components/track/TrackStats";
 import { VideoPlayer } from "@/components/track/VideoPlayer";
 import {
@@ -97,6 +98,8 @@ export default async function TrackPage({ params }: Props) {
               <p className="text-sm text-muted">متن ترانه‌ای ثبت نشده است.</p>
             )}
           </div>
+
+          <TrackFileDetails track={track} />
 
           <Comments trackId={track.id} items={trackComments} />
         </div>
