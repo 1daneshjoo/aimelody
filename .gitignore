@@ -19,6 +19,8 @@
 
 # production
 /build
+/.deploy-staging
+/cpanel-deploy.zip
 
 # misc
 .DS_Store

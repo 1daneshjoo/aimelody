@@ -9,7 +9,8 @@
     "lint": "eslint",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
-    "db:migrate": "node scripts/migrate-v2.mjs"
+    "db:migrate": "node scripts/migrate-v2.mjs",
+    "deploy:cpanel": "node scripts/prepare-cpanel-deploy.mjs"
   },
   "dependencies": {
     "basic-ftp": "^6.0.1",
@@ -21,12 +22,13 @@
     "mysql2": "^3.23.1",
     "next": "16.2.10",
     "node-id3": "^0.2.9",
+    "postcss": "^8.5.21",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "undici": "^7.28.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
