@@ -4,14 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "postbuild": "node scripts/sync-static-to-public.mjs",
+    "build": "next build --webpack",
     "start": "node server.js",
     "lint": "eslint",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:migrate": "node scripts/migrate-v2.mjs",
-    "deploy:cpanel": "node scripts/prepare-cpanel-deploy.mjs"
+    "deploy:cpanel": "node scripts/prepare-cpanel-deploy.mjs",
+    "sync:static": "node scripts/sync-static-to-public.mjs"
   },
   "dependencies": {
     "basic-ftp": "^6.0.1",

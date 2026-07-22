@@ -14,6 +14,7 @@ const ROOT = path.resolve(__dirname, "..");
 const STAGING = path.join(ROOT, ".deploy-staging");
 const STANDALONE = path.join(ROOT, ".next", "standalone");
 const OUT_ZIP = path.join(ROOT, "cpanel-deploy.zip");
+const PUBLIC_NEXT = path.join(ROOT, "public", "_next");
 
 function run(cmd) {
   console.log(`\n> ${cmd}`);
@@ -69,10 +70,22 @@ function verifyStaging() {
 
 console.log("=== AiMelody cPanel deploy pack ===\n");
 
+// Next.js اجازه نمی‌دهد public/_next هنگام بیلد وجود داشته باشد
+if (fs.existsSync(PUBLIC_NEXT)) {
+  console.log("> حذف public/_next باقی‌مانده از دیپلوی قبلی...");
+  rmDir(PUBLIC_NEXT);
+}
+
 run("npm run build");
 
 if (!fs.existsSync(STANDALONE)) {
   console.error("خطا: .next/standalone ساخته نشد. output: standalone در next.config فعال است؟");
+  process.exit(1);
+}
+
+const staticSrc = path.join(ROOT, ".next", "static");
+if (!fs.existsSync(staticSrc)) {
+  console.error("خطا: .next/static یافت نشد");
   process.exit(1);
 }
 
@@ -82,16 +95,13 @@ fs.mkdirSync(STAGING, { recursive: true });
 console.log("\n> کپی standalone...");
 copyDir(STANDALONE, STAGING);
 
-console.log("> کپی static و public...");
-copyDir(path.join(ROOT, ".next", "static"), path.join(STAGING, ".next", "static"));
+console.log("> کپی .next/static و public...");
+copyDir(staticSrc, path.join(STAGING, ".next", "static"));
 copyDir(path.join(ROOT, "public"), path.join(STAGING, "public"));
 
-console.log("> sync static به public/_next/static...");
-run("node scripts/sync-static-to-public.mjs");
-copyDir(
-  path.join(ROOT, "public", "_next", "static"),
-  path.join(STAGING, "public", "_next", "static"),
-);
+// فقط داخل بستهٔ دیپلوی — نه در public پروژه (Next بیلد بعدی را خراب می‌کند)
+console.log("> کپی static به staging/public/_next/static...");
+copyDir(staticSrc, path.join(STAGING, "public", "_next", "static"));
 
 console.log("> جایگزینی server.js برای Passenger...");
 fs.copyFileSync(
@@ -116,12 +126,11 @@ const sizeMb = (fs.statSync(OUT_ZIP).size / (1024 * 1024)).toFixed(1);
 console.log(`\n✓ آماده: ${OUT_ZIP} (${sizeMb} MB)`);
 console.log(`
 روی سرور:
-  1) همهٔ فایل‌های قدیمی apps-aimelody را پاک کنید (یا Extract با جایگزینی)
+  1) محتویات قدیمی apps-aimelody را پاک کنید (به‌خصوص .next و public/_next)
   2) cpanel-deploy.zip را Extract کنید
   3) RESTART در پنل Node
 
 بررسی روی سرور:
   ls .next/static/chunks | wc -l
   ls public/_next/static/chunks | wc -l
-  (هر دو باید عدد بزرگ‌تر از ۰ باشد)
 `);
