@@ -1,0 +1,5 @@
+# Map /_next/static → .next/static (common cPanel/Apache fix)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^_next/static/(.*)$ .next/static/$1 [L]
+</IfModule>

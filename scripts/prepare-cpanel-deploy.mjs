@@ -109,6 +109,12 @@ fs.copyFileSync(
   path.join(STAGING, "server.js"),
 );
 
+console.log("> افزودن .htaccess برای _next/static...");
+fs.copyFileSync(
+  path.join(ROOT, "deploy", "htaccess-cpanel"),
+  path.join(STAGING, ".htaccess"),
+);
+
 const pkg = {
   name: "aimelody.ir",
   version: JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version,
