@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "postbuild": "node scripts/sync-static-to-public.mjs",
     "start": "node server.js",
     "lint": "eslint",
     "db:up": "docker compose up -d",

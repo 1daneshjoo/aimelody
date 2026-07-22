@@ -38,6 +38,7 @@ yarn-error.log*
 
 # local uploaded media (dev proxy to dl)
 /public/uploads
+/public/_next
 
 # vercel
 .vercel
