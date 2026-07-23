@@ -1,5 +1,19 @@
 import Link from "next/link";
+import Script from "next/script";
 import { AuthLink } from "@/components/auth/AuthLink";
+
+const matomoScript = `
+var _paq = window._paq = window._paq || [];
+_paq.push(['trackPageView']);
+_paq.push(['enableLinkTracking']);
+(function() {
+  var u="https://piwik.partocms.com/";
+  _paq.push(['setTrackerUrl', u+'matomo.php']);
+  _paq.push(['setSiteId', '32']);
+  var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+  g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+})();
+`;
 
 export function Footer() {
   return (
@@ -48,6 +62,9 @@ export function Footer() {
       <div className="border-t border-line py-4 text-center text-xs text-muted">
         © ۱۴۰۵ AiMelody.ir
       </div>
+      <Script id="matomo-analytics" strategy="afterInteractive">
+        {matomoScript}
+      </Script>
     </footer>
   );
 }
