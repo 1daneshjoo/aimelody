@@ -138,7 +138,8 @@ export async function embedAudioMetadata(input: AudioEmbedInput): Promise<boolea
     };
 
     const cover = await fetchCoverImage(input.coverUrl);
-    if (cover) {
+    // کاور بزرگ گاهی فایل را خراب می‌کند — فقط تصاویر کوچک‌تر از 1.5MB
+    if (cover && cover.buffer.length < 1.5 * 1024 * 1024) {
       tags.image = {
         mime: cover.mime,
         type: { id: 3, name: "front cover" },
@@ -148,9 +149,9 @@ export async function embedAudioMetadata(input: AudioEmbedInput): Promise<boolea
     }
 
     const tagged = NodeID3.write(tags, buffer);
-    if (!tagged) return false;
+    if (!Buffer.isBuffer(tagged) || tagged.length < 128) return false;
 
-    await storeUpload(storagePath, tagged, contentType || "audio/mpeg");
+    await storeUpload(storagePath, tagged, "audio/mpeg");
     return true;
   } catch (e) {
     console.warn("[embedAudioMetadata]", e);

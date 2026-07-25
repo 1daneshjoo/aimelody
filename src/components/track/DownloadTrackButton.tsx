@@ -7,7 +7,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   track: Track;
   className?: string;
-  /** فقط آیکون بدون متن */
   iconOnly?: boolean;
 };
 
@@ -16,9 +15,10 @@ export function DownloadTrackButton({
   className,
   iconOnly = false,
 }: Props) {
-  if (!track.mediaUrl) return null;
+  if (!track.mediaUrl && !track.id) return null;
 
-  const href = `/api/download?url=${encodeURIComponent(track.mediaUrl)}&title=${encodeURIComponent(track.title)}&type=${encodeURIComponent(track.type)}`;
+  // دانلود با شناسه اثر — از DB آدرس واقعی خوانده می‌شود
+  const href = `/api/download?id=${encodeURIComponent(track.id)}`;
 
   return (
     <a

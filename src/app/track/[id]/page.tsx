@@ -6,7 +6,7 @@ import { ArtistActions } from "@/components/artist/ArtistActions";
 import { AudioPlayer } from "@/components/track/AudioPlayer";
 import { Comments } from "@/components/track/Comments";
 import { RatingForm } from "@/components/track/RatingForm";
-import { TrackFileDetails } from "@/components/track/TrackFileDetails";
+import { ShareTrackButtons } from "@/components/track/ShareTrackButtons";
 import { TrackStats } from "@/components/track/TrackStats";
 import { VideoPlayer } from "@/components/track/VideoPlayer";
 import {
@@ -99,7 +99,7 @@ export default async function TrackPage({ params }: Props) {
             )}
           </div>
 
-          <TrackFileDetails track={track} />
+          <ShareTrackButtons track={track} />
 
           <Comments trackId={track.id} items={trackComments} />
         </div>
