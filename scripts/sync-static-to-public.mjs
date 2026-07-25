@@ -23,4 +23,4 @@ fs.cpSync(src, dest, { recursive: true });
 const chunks = path.join(dest, "chunks");
 const count = fs.existsSync(chunks) ? fs.readdirSync(chunks).length : 0;
 console.log(`[sync-static] ${count} فایل chunk → public/_next/static`);
-console.log("[sync-static] هشدار: قبل از بیلد بعدی، public/_next را پاک کنید");
+console.log("[sync-static] بیلد بعدی با prebuild خودش public/_next را پاک می‌کند");

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { downloadFileName, DL_BASE } from "@/lib/media";
-import { getTrackByPublicId } from "@/lib/tracks-server";
 import { getTrackById } from "@/data/mock";
+import { getServerSession } from "@/lib/auth";
+import { downloadFileName, DL_BASE } from "@/lib/media";
+import { getTrackForViewer } from "@/lib/tracks-server";
 
 export const runtime = "nodejs";
 
@@ -55,11 +56,17 @@ export async function GET(req: NextRequest) {
   let type: "audio" | "video" = "audio";
 
   if (trackId) {
-    const track =
-      (await getTrackByPublicId(trackId).catch(() => null)) ?? getTrackById(trackId);
-    if (!track || track.status !== "approved") {
+    const session = await getServerSession();
+    const viewed = await getTrackForViewer(trackId, session).catch(() => null);
+    const track = viewed?.track ?? getTrackById(trackId);
+
+    if (!track) {
       return NextResponse.json({ ok: false, error: "اثر یافت نشد" }, { status: 404 });
     }
+    if (track.status !== "approved" && !viewed) {
+      return NextResponse.json({ ok: false, error: "اثر یافت نشد" }, { status: 404 });
+    }
+
     mediaUrl = track.mediaUrl;
     title = track.title;
     type = track.type;

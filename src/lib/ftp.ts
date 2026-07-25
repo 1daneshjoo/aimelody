@@ -378,8 +378,17 @@ export type StoredUpload = {
   publicPathHint?: string;
 };
 
+function localUploadAllowed() {
+  if (process.env.DL_UPLOAD_LOCAL_FALLBACK === "false") return false;
+  if (process.env.DL_UPLOAD_LOCAL_FALLBACK === "true") {
+    return process.env.NODE_ENV !== "production";
+  }
+  return process.env.NODE_ENV !== "production";
+}
+
 /**
- * اولویت: سی‌پنل (HTTPS) → PHP HTTPS → FTP → لوکال
+ * اولویت: سی‌پنل (HTTPS) → PHP HTTPS → FTP.
+ * ذخیره روی دامنه اصلی فقط در توسعه مجاز است؛ production باید حتماً مقصد dl داشته باشد.
  */
 export async function storeUpload(
   storagePath: string,
@@ -403,13 +412,19 @@ export async function storeUpload(
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const allowLocal =
-        process.env.DL_UPLOAD_LOCAL_FALLBACK !== "false" &&
+        localUploadAllowed() &&
         /ETIMEDOUT|ECONNREFUSED|ENOTFOUND|timeout/i.test(msg);
       if (!allowLocal) throw e;
       console.warn("[storeUpload] FTP failed, falling back to local:", msg);
       const publicPathHint = await saveLocalUpload(storagePath, bytes);
       return { via: "local", publicPathHint };
     }
+  }
+
+  if (!localUploadAllowed()) {
+    throw new Error(
+      "هاست دانلود پیکربندی نشده است؛ یکی از DL_CPANEL_* یا DL_HTTP_UPLOAD_* یا DL_FTP_* را تنظیم کنید",
+    );
   }
 
   const publicPathHint = await saveLocalUpload(storagePath, bytes);

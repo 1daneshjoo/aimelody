@@ -1,4 +1,5 @@
 import { SignJWT, jwtVerify } from "jose";
+import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
 const COOKIE = "aimelody_session";
@@ -56,6 +57,12 @@ export async function verifySessionToken(token: string | undefined | null): Prom
 
 export async function readSession(req: NextRequest): Promise<SessionUser | null> {
   return verifySessionToken(req.cookies.get(COOKIE)?.value);
+}
+
+/** سشن برای Server Components / صفحات RSC */
+export async function getServerSession(): Promise<SessionUser | null> {
+  const jar = await cookies();
+  return verifySessionToken(jar.get(COOKIE)?.value);
 }
 
 export function sessionCookieOptions(token: string) {

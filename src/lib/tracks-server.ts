@@ -19,6 +19,29 @@ export async function getTrackByPublicId(id: string): Promise<Track | null> {
   return row ? mapTrackToCatalog(row) : null;
 }
 
+/** اثر برای بازدیدکننده — pending فقط برای ادمین یا مالک */
+export async function getTrackForViewer(
+  id: string,
+  session: { id: number; role: "user" | "admin" } | null,
+): Promise<{ track: Track; isOwner: boolean; isAdmin: boolean } | null> {
+  const rows = await query<TrackRow[]>(
+    `SELECT ${TRACK_SELECT} ${TRACK_FROM_JOIN} WHERE t.public_id = :id LIMIT 1`,
+    { id },
+  );
+  const row = rows[0];
+  if (!row) return null;
+
+  const isAdmin = session?.role === "admin";
+  const isOwner = session?.id === row.user_id;
+  if (row.status !== "approved" && !isAdmin && !isOwner) return null;
+
+  return {
+    track: mapTrackToCatalog(row),
+    isOwner,
+    isAdmin,
+  };
+}
+
 export async function getApprovedTracksFromDb(): Promise<Track[]> {
   const rows = await query<TrackRow[]>(
     `SELECT ${TRACK_SELECT} ${TRACK_FROM_JOIN}

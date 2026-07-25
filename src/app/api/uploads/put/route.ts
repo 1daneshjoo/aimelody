@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 
 /**
  * دریافت فایل با توکن امضاشده.
- * اولویت ذخیره: HTTPS روی dl → FTP → لوکال public/uploads
+ * در production فایل باید روی هاست دانلود ذخیره شود.
  */
 export async function PUT(req: NextRequest) {
   try {
@@ -59,8 +59,8 @@ export async function PUT(req: NextRequest) {
   } catch (e) {
     console.error("[uploads/put]", e);
     const msg = e instanceof Error ? e.message : "خطای سرور";
-    const hint = /ETIMEDOUT|ECONNREFUSED|سی‌پنل|cPanel/i.test(msg)
-      ? "آپلود از طریق سی‌پنل/شبکه ناموفق بود. DL_CPANEL_* را در .env.local چک کنید."
+    const hint = /ETIMEDOUT|ECONNREFUSED|سی‌پنل|cPanel|هاست دانلود پیکربندی نشده/i.test(msg)
+      ? "اتصال هاست دانلود برقرار نیست. متغیرهای DL_CPANEL_* یا DL_HTTP_UPLOAD_* را در پنل Node بررسی کنید."
       : undefined;
     return NextResponse.json(
       { ok: false, error: msg, hint },

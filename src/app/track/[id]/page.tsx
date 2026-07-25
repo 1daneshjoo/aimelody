@@ -15,8 +15,11 @@ import {
   getTrackById,
   vocalSourceLabel,
 } from "@/data/mock";
+import { getServerSession } from "@/lib/auth";
 import { getCommentsForTrackPublicId } from "@/lib/social";
-import { getTrackByPublicId } from "@/lib/tracks-server";
+import { getTrackByPublicId, getTrackForViewer } from "@/lib/tracks-server";
+import { statusLabel } from "@/lib/utils";
+import type { Track } from "@/types";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -28,8 +31,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TrackPage({ params }: Props) {
   const { id } = await params;
-  const track = (await getTrackByPublicId(id).catch(() => null)) ?? getTrackById(id);
-  if (!track || track.status !== "approved") notFound();
+  const session = await getServerSession();
+
+  let track: Track | null = null;
+  let access: { isOwner: boolean; isAdmin: boolean } = { isOwner: false, isAdmin: false };
+
+  try {
+    const viewed = await getTrackForViewer(id, session);
+    if (viewed) {
+      track = viewed.track;
+      access = { isOwner: viewed.isOwner, isAdmin: viewed.isAdmin };
+    }
+  } catch {
+    // fallback mock
+  }
+
+  if (!track) {
+    const mock = getTrackById(id);
+    if (!mock || mock.status !== "approved") notFound();
+    track = mock;
+  }
 
   let trackComments = getCommentsByTrack(track.id);
   try {
@@ -42,8 +63,17 @@ export default async function TrackPage({ params }: Props) {
     ? getCompetitionById(track.competitionId)
     : undefined;
 
+  const showModerationBanner = track.status !== "approved" && (access.isAdmin || access.isOwner);
+
   return (
     <div className="container-page py-8 md:py-10">
+      {showModerationBanner && (
+        <div className="mb-4 rounded-xl border border-accent/40 bg-accent-soft px-4 py-3 text-sm text-accent">
+          وضعیت اثر: <strong>{statusLabel(track.status)}</strong>
+          {access.isAdmin ? " — فقط مدیر و مالک می‌توانند این صفحه را ببینند." : " — هنوز برای عموم منتشر نشده است."}
+        </div>
+      )}
+
       {track.type === "audio" ? (
         <AudioPlayer track={track} />
       ) : (
@@ -99,7 +129,7 @@ export default async function TrackPage({ params }: Props) {
             )}
           </div>
 
-          <ShareTrackButtons track={track} />
+          {track.status === "approved" && <ShareTrackButtons track={track} />}
 
           <Comments trackId={track.id} items={trackComments} />
         </div>
@@ -126,7 +156,7 @@ export default async function TrackPage({ params }: Props) {
             </div>
             <ArtistActions artistId={track.artist.id} />
           </div>
-          <RatingForm track={track} />
+          {track.status === "approved" && <RatingForm track={track} />}
         </div>
       </div>
     </div>

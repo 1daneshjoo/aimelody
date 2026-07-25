@@ -148,12 +148,13 @@ export async function POST(req: NextRequest) {
 
     if (type === "audio") {
       const artistName = session.name?.trim() || session.phone;
-      void embedAudioMetadata({
+      const embedded = await embedAudioMetadata({
         title,
         artistName,
         genre: (body.genre || "").trim() || null,
         language: (body.language || "").trim() || null,
         lyricist,
+        composer: (body.composer || "").trim() || null,
         lyrics: (body.lyrics || "").trim() || null,
         aiTools: (body.aiTools || "").trim() || null,
         description: (body.description || "").trim() || null,
@@ -161,7 +162,13 @@ export async function POST(req: NextRequest) {
         mediaUrl,
         coverUrl,
         storagePath: (body.mediaStoragePath || "").trim() || null,
-      }).catch((e) => console.warn("[tracks/POST] embed metadata", e));
+      }).catch((e) => {
+        console.warn("[tracks/POST] embed metadata", e);
+        return false;
+      });
+      if (!embedded) {
+        console.warn("[tracks/POST] metadata not embedded for", publicId, mediaUrl);
+      }
     }
 
     return NextResponse.json({
