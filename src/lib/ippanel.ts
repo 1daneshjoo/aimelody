@@ -28,7 +28,7 @@ function patternConfig() {
 
 async function sendPatternOtp(
   toE164: string,
-  variable: Record<string, string>,
+  params: Record<string, string>,
 ): Promise<SendSmsResult> {
   const apiKey = process.env.IPPANEL_ACCESS_KEY?.trim();
   const cfg = patternConfig();
@@ -43,7 +43,7 @@ async function sendPatternOtp(
     return { ok: false, error: "IPPANEL_OTP_PATTERN_SENDER / IPPANEL_FROM تنظیم نشده است" };
   }
 
-  const url = "https://edge.ippanel.com/v1/api/send/pattern/normal";
+  const url = "https://edge.ippanel.com/v1/api/patterns/send";
 
   try {
     const res = await fetch(url, {
@@ -53,10 +53,10 @@ async function sendPatternOtp(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        code: cfg.code,
+        pattern_code: cfg.code,
         sender: cfg.sender,
         recipient: toE164,
-        variable,
+        params,
       }),
       cache: "no-store",
     });
