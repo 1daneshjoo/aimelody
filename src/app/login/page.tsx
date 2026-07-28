@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -19,6 +19,7 @@ export default function LoginPage() {
 }
 
 function LoginForm() {
+  const RESEND_SECONDS = 120;
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading, refresh } = useAuth();
@@ -28,6 +29,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
+  const [resendLeft, setResendLeft] = useState(0);
 
   const nextPath = safeNextPath(searchParams.get("next"), "/dashboard");
 
@@ -37,6 +39,20 @@ function LoginForm() {
       router.replace(user.profileComplete ? nextPath : "/profile/setup");
     }
   }, [authLoading, user, router, nextPath]);
+
+  useEffect(() => {
+    if (!otpSent || resendLeft <= 0) return;
+    const timer = window.setTimeout(() => {
+      setResendLeft((v) => Math.max(0, v - 1));
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [otpSent, resendLeft]);
+
+  const resendLabel = useMemo(() => {
+    const min = Math.floor(resendLeft / 60);
+    const sec = resendLeft % 60;
+    return `${min}:${String(sec).padStart(2, "0")}`;
+  }, [resendLeft]);
 
   const sendOtp = async () => {
     setLoading(true);
@@ -60,6 +76,7 @@ function LoginForm() {
         return;
       }
       setOtpSent(true);
+      setResendLeft(RESEND_SECONDS);
       setInfo(
         data.demo
           ? `${data.message || ""} ${data.hint ? `(${data.hint})` : ""}`.trim()
@@ -164,9 +181,9 @@ function LoginForm() {
               type="button"
               className="btn btn-ghost w-full"
               onClick={sendOtp}
-              disabled={loading}
+              disabled={loading || resendLeft > 0}
             >
-              ارسال مجدد کد
+              {resendLeft > 0 ? `ارسال مجدد تا ${resendLabel}` : "ارسال مجدد کد"}
             </button>
           )}
         </div>

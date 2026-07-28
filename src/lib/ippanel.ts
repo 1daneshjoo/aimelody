@@ -20,8 +20,8 @@ function patternConfig() {
     code: process.env.IPPANEL_OTP_PATTERN_CODE?.trim(),
     sender: process.env.IPPANEL_OTP_PATTERN_SENDER?.trim() || process.env.IPPANEL_FROM?.trim(),
     codeKey: process.env.IPPANEL_OTP_PATTERN_VAR_CODE?.trim() || "code",
-    minutesKey: process.env.IPPANEL_OTP_PATTERN_VAR_MINUTES?.trim() || "minutes",
-    appKey: process.env.IPPANEL_OTP_PATTERN_VAR_APP?.trim() || "app",
+    minutesKey: process.env.IPPANEL_OTP_PATTERN_VAR_MINUTES?.trim() || "",
+    appKey: process.env.IPPANEL_OTP_PATTERN_VAR_APP?.trim() || "",
     appValue: process.env.IPPANEL_OTP_PATTERN_APP_NAME?.trim() || "AiMelody",
   };
 }
@@ -124,8 +124,10 @@ export async function sendOtpSms(
   if (cfg.code) {
     const variable: Record<string, string> = {
       [cfg.codeKey]: code,
-      [cfg.minutesKey]: String(expiresMinutes),
     };
+    if (cfg.minutesKey) {
+      variable[cfg.minutesKey] = String(expiresMinutes);
+    }
     if (cfg.appKey) {
       variable[cfg.appKey] = cfg.appValue;
     }
