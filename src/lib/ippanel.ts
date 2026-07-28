@@ -15,6 +15,13 @@ function authHeaders(apiKey: string) {
   };
 }
 
+function apiKeyHeaders(apiKey: string) {
+  return {
+    Accept: "application/json",
+    apikey: apiKey,
+  };
+}
+
 function patternConfig() {
   return {
     code: process.env.IPPANEL_OTP_PATTERN_CODE?.trim(),
@@ -43,34 +50,87 @@ async function sendPatternOtp(
     return { ok: false, error: "IPPANEL_OTP_PATTERN_SENDER / IPPANEL_FROM تنظیم نشده است" };
   }
 
-  const url = "https://edge.ippanel.com/v1/api/patterns/send";
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
+  const attempts = [
+    {
+      url: "https://edge.ippanel.com/v1/api/patterns/send",
       headers: {
         ...authHeaders(apiKey),
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
+      body: {
         pattern_code: cfg.code,
         sender: cfg.sender,
         recipient: toE164,
         params,
-      }),
-      cache: "no-store",
-    });
-    const text = await res.text();
-    let raw: unknown = text;
-    try {
-      raw = JSON.parse(text);
-    } catch {
-      // plain text response
+      },
+    },
+    {
+      url: "https://edge.ippanel.com/v1/api/patterns/send",
+      headers: {
+        ...authHeaders(apiKey),
+        "Content-Type": "application/json",
+      },
+      body: {
+        pattern_code: cfg.code,
+        sender: cfg.sender,
+        recipient: toE164,
+        values: params,
+      },
+    },
+    {
+      url: "https://api2.ippanel.com/api/v1/sms/pattern/normal/send",
+      headers: {
+        ...apiKeyHeaders(apiKey),
+        "Content-Type": "application/json",
+      },
+      body: {
+        code: cfg.code,
+        sender: cfg.sender,
+        recipient: toE164,
+        variable: params,
+      },
+    },
+  ];
+
+  try {
+    let lastError: SendSmsResult | null = null;
+
+    for (const attempt of attempts) {
+      const res = await fetch(attempt.url, {
+        method: "POST",
+        headers: attempt.headers,
+        body: JSON.stringify(attempt.body),
+        cache: "no-store",
+      });
+      const text = await res.text();
+      let raw: unknown = text;
+      try {
+        raw = JSON.parse(text);
+      } catch {
+        // plain text response
+      }
+
+      if (res.ok) {
+        return { ok: true, raw };
+      }
+
+      lastError = {
+        ok: false,
+        error: `IPPanel Pattern HTTP ${res.status}`,
+        raw: {
+          endpoint: attempt.url,
+          body: attempt.body,
+          response: raw,
+        },
+      };
+
+      // اگر endpoint وجود دارد ولی payload/اعتبارسنجی ایراد دارد، دیگر fallback نکن
+      if (res.status !== 404) {
+        return lastError;
+      }
     }
-    if (!res.ok) {
-      return { ok: false, error: `IPPanel Pattern HTTP ${res.status}`, raw };
-    }
-    return { ok: true, raw };
+
+    return lastError || { ok: false, error: "IPPanel Pattern failed" };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "خطای شبکه IPPanel" };
   }
