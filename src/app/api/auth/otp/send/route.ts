@@ -55,9 +55,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // اگر خط ارسال تنظیم نشده، مستقیم حالت توسعه (بدون درخواست شبکه به IPPanel)
+    const hasPattern = Boolean(process.env.IPPANEL_OTP_PATTERN_CODE?.trim());
     const from = process.env.IPPANEL_FROM?.trim();
-    if (!from && process.env.OTP_DEV_FALLBACK === "true") {
+    const patternSender = process.env.IPPANEL_OTP_PATTERN_SENDER?.trim();
+
+    // اگر نه پترن تنظیم است نه خط ارسال، مستقیم حالت توسعه
+    if (!hasPattern && !from && process.env.OTP_DEV_FALLBACK === "true") {
       console.warn("[OTP_DEV_FALLBACK]", phone, code, "IPPANEL_FROM خالی است");
       return NextResponse.json({
         ok: true,
@@ -65,9 +68,16 @@ export async function POST(req: Request) {
         message: "حالت توسعه: کد در ترمینال سرور چاپ شد (خط SMS تنظیم نشده).",
       });
     }
+    if (hasPattern && !patternSender && !from && process.env.OTP_DEV_FALLBACK === "true") {
+      console.warn("[OTP_DEV_FALLBACK]", phone, code, "IPPANEL_OTP_PATTERN_SENDER خالی است");
+      return NextResponse.json({
+        ok: true,
+        demo: true,
+        message: "حالت توسعه: کد در ترمینال سرور چاپ شد (فرستنده پترن تنظیم نشده).",
+      });
+    }
 
-    const message = `کد ورود AiMelody: ${code}\nاین کد تا ۵ دقیقه معتبر است.`;
-    const sms = await sendOtpSms(toE164Iran(phone), message);
+    const sms = await sendOtpSms(toE164Iran(phone), code, 5);
 
     if (!sms.ok) {
       const fallback = process.env.OTP_DEV_FALLBACK === "true";
